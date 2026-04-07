@@ -1,24 +1,25 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import logo from "../../assets/logo.png";
 
-// ─── Data ──────────────────────────────────────────────────────────────────────
+// ─── Data (labels via i18n: footer.quickLinks.* / footer.services.*) ───────────
 
-const quickLinks = [
-  { label: "Accueil",        ar: "الرئيسية",     href: "/" },
-  { label: "À propos",       ar: "من نحن",        href: "#about" },
-  { label: "Formations",     ar: "التكوينات",     href: "/formations" },
-  { label: "Activités",      ar: "الأنشطة",       href: "/activites" },
-  { label: "Infrastructures",ar: "البنية التحتية", href: "/infrastructures" },
-  { label: "Contact",        ar: "اتصل بنا",      href: "#contact" },
+const QUICK_LINKS = [
+  { id: "home", href: "/" },
+  { id: "about", href: "#about" },
+  { id: "formations", href: "/formations" },
+  { id: "activities", href: "/activites" },
+  { id: "infrastructures", href: "/infrastructures" },
+  { id: "contact", href: "#contact" },
 ];
 
-const services = [
-  { label: "Salles de formation", ar: "قاعات التكوين" },
-  { label: "Amphithéâtres",       ar: "المدرجان" },
-  { label: "Hébergement",         ar: "الإقامة" },
-  { label: "Restauration",        ar: "المطعم" },
-  { label: "Salle de prière",     ar: "قاعة الصلاة" },
-  { label: "Espaces dédiés",      ar: "فضاءات متخصصة" },
+const SERVICES = [
+  { id: "training_rooms" },
+  { id: "amphitheaters" },
+  { id: "accommodation" },
+  { id: "restaurant" },
+  { id: "prayer" },
+  { id: "spaces" },
 ];
 
 const socials = [
@@ -94,6 +95,7 @@ const contactInfo = [
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function Footer() {
+  const { t } = useTranslation();
   const navigate   = useNavigate();
   const location   = useLocation();
 
@@ -353,20 +355,19 @@ export default function Footer() {
             {/* ── COL 1: Brand ── */}
             <div className="lg:col-span-1">
               <a href="/" className="flex items-center gap-3 mb-5 group">
-                <img src={logo} alt="CRFR logo" className="w-12 h-auto object-contain" />
+                <img src={logo} alt={t("navbar.logo_alt")} className="w-12 h-auto object-contain" />
                 <div>
                   <div className="footer-display text-xl font-light text-gray-900 dark:text-[#e5e0d8] group-hover:text-[#D97706] transition-colors">
-                    CRFR Maghreb
+                    {t("footer.brand_short")}
                   </div>
                   <div className="text-[0.65rem] tracking-widest text-[#D97706] uppercase">
-                    Oujda · المغرب العربي
+                    {t("footer.subtitle")}
                   </div>
                 </div>
               </a>
 
               <p className="text-[0.8rem] leading-relaxed text-gray-600 dark:text-[rgba(229,224,216,0.45)] mb-6 max-w-[230px]">
-                Centre de Formation et de Ressources Pédagogiques — au service de
-                l'éducation au Maroc Oriental.
+                {t("footer.intro")}
               </p>
 
               {/* Social */}
@@ -381,18 +382,17 @@ export default function Footer() {
 
             {/* ── COL 2: Quick links ── */}
             <div>
-              <p className="footer-heading">Navigation</p>
+              <p className="footer-heading">{t("footer.heading_navigation")}</p>
               <nav className="flex flex-col gap-1">
-                {quickLinks.map((link) => (
+                {QUICK_LINKS.map((link) => (
                   <a
-                    key={link.label}
+                    key={link.id}
                     href={link.href}
                     className="footer-link"
                     onClick={(e) => handleLink(e, link.href)}
                   >
                     <span className="text-[#D97706] text-[0.6rem]">↗</span>
-                    <span>{link.label}</span>
-                    <span className="text-[0.7rem] opacity-30 mr-auto">{link.ar}</span>
+                    <span>{t(`footer.quickLinks.${link.id}`)}</span>
                   </a>
                 ))}
               </nav>
@@ -400,13 +400,12 @@ export default function Footer() {
 
             {/* ── COL 3: Services ── */}
             <div>
-              <p className="footer-heading">Services</p>
+              <p className="footer-heading">{t("footer.heading_services")}</p>
               <ul className="flex flex-col gap-1">
-                {services.map((s) => (
-                  <li key={s.label} className="footer-link" style={{ cursor: "default" }}>
+                {SERVICES.map((s) => (
+                  <li key={s.id} className="footer-link" style={{ cursor: "default" }}>
                     <span className="w-1 h-1 rounded-full bg-[#D97706] flex-shrink-0" />
-                    <span>{s.label}</span>
-                    <span className="text-[0.7rem] opacity-30 mr-auto">{s.ar}</span>
+                    <span>{t(`footer.services.${s.id}`)}</span>
                   </li>
                 ))}
               </ul>
@@ -414,7 +413,7 @@ export default function Footer() {
 
             {/* ── COL 4: Contact + Newsletter ── */}
             <div>
-              <p className="footer-heading">Contact</p>
+              <p className="footer-heading">{t("footer.heading_contact")}</p>
               <div className="mb-6">
                 {contactInfo.map((c, i) => (
                   <a key={i} href={c.href} className="footer-contact-row">
@@ -426,15 +425,15 @@ export default function Footer() {
 
               {/* Newsletter */}
               <p className="text-[0.65rem] uppercase tracking-[0.2em] text-gray-500 dark:text-[rgba(229,224,216,0.35)] mb-1">
-                Newsletter
+                {t("footer.newsletter_label")}
               </p>
               <div className="footer-newsletter-wrap">
                 <input
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder={t("footer.newsletter_placeholder")}
                   className="footer-newsletter-input"
                 />
-                <button className="footer-newsletter-btn">S'abonner</button>
+                <button type="button" className="footer-newsletter-btn">{t("footer.newsletter_cta")}</button>
               </div>
             </div>
           </div>
@@ -445,17 +444,15 @@ export default function Footer() {
           {/* ── BOTTOM BAR ── */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-[0.72rem] text-gray-500 dark:text-[rgba(229,224,216,0.25)] text-center sm:text-left">
-              © {new Date().getFullYear()}{" "}
-              <span className="text-[#D97706]">CRFR Maghreb Arabi</span> — Oujda, Maroc.
-              Tous droits réservés.
+              {t("footer.copyright", { year: new Date().getFullYear() })}
             </p>
 
             <div className="flex items-center gap-5">
-              <a href="#" className="footer-bottom-link">Politique de confidentialité</a>
+              <a href="#" className="footer-bottom-link">{t("footer.legal_privacy")}</a>
               <span className="text-gray-400 dark:text-[rgba(229,224,216,0.1)]">|</span>
-              <a href="#" className="footer-bottom-link">Mentions légales</a>
+              <a href="#" className="footer-bottom-link">{t("footer.legal_terms")}</a>
               <span className="text-gray-400 dark:text-[rgba(229,224,216,0.1)]">|</span>
-              <a href="#" className="footer-bottom-link">Plan du site</a>
+              <a href="#" className="footer-bottom-link">{t("footer.legal_sitemap")}</a>
             </div>
           </div>
         </div>

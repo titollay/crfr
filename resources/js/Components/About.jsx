@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import FeatureCard, { cardVariant } from "./FeatureCard";
 
 /* ─────────────────────────────────────────────
@@ -32,42 +33,12 @@ const slideRight = {
    Feature data
    ───────────────────────────────────────────── */
 const FEATURES = [
-  {
-    icon: "🎓",
-    title: "Formations continues",
-    description: "Programmes de perfectionnement professionnel continus",
-    accent: "amber",
-  },
-  {
-    icon: "🤝",
-    title: "Séminaires & Conférences",
-    description: "Espaces d'échange et de partage des expertises",
-    accent: "blue",
-  },
-  {
-    icon: "📋",
-    title: "Réunions pédagogiques",
-    description: "Cadre institutionnel dédié aux conseils et commissions",
-    accent: "emerald",
-  },
-  {
-    icon: "📝",
-    title: "Concours & Examens",
-    description: "Salles équipées pour toute épreuve officielle",
-    accent: "rose",
-  },
-  {
-    icon: "🏠",
-    title: "Hébergement",
-    description: "Capacité d'hébergement confortable pour les déplacements",
-    accent: "violet",
-  },
-  {
-    icon: "✅",
-    title: "Encadrement professionnel",
-    description: "Équipe qualifiée au service de chaque activité",
-    accent: "teal",
-  },
+  { id: "training", icon: "🎓", accent: "amber" },
+  { id: "seminars", icon: "🤝", accent: "blue" },
+  { id: "meetings", icon: "📋", accent: "emerald" },
+  { id: "exams", icon: "📝", accent: "rose" },
+  { id: "accommodation", icon: "🏠", accent: "violet" },
+  { id: "support", icon: "✅", accent: "teal" },
 ];
 
 /* ─────────────────────────────────────────────
@@ -93,6 +64,7 @@ function StatPill({ value, label }) {
    Decorative illustration panel (right side)
    ───────────────────────────────────────────── */
 function IllustrationPanel({ prefersReduced }) {
+  const { t } = useTranslation();
   const motionProps = prefersReduced
     ? {}
     : {
@@ -106,7 +78,7 @@ function IllustrationPanel({ prefersReduced }) {
       variants={prefersReduced ? undefined : containerVariants}
       {...motionProps}
       className="flex flex-col gap-4"
-      aria-label="Points clés du centre"
+      aria-label={t("about.panel_aria")}
     >
       {/* Top decorative card — overview image placeholder */}
       <motion.div
@@ -126,12 +98,16 @@ function IllustrationPanel({ prefersReduced }) {
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">
-            Région de l'Oriental
+            {t("about.panel_kicker")}
           </p>
           <p className="text-base font-bold text-stone-800 dark:text-stone-100 leading-snug">
-            Pôle éducatif<br />d'excellence
+            {t("about.panel_title_1")}
+            <br />
+            {t("about.panel_title_2")}
           </p>
-          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Oujda · المغرب العربي</p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+            {t("about.panel_sub")}
+          </p>
         </div>
       </motion.div>
 
@@ -140,9 +116,9 @@ function IllustrationPanel({ prefersReduced }) {
         variants={prefersReduced ? undefined : containerVariants}
         className="grid grid-cols-3 gap-3"
       >
-        <StatPill value="6+" label="Services" />
-        <StatPill value="100%" label="Institutionnel" />
-        <StatPill value="∞" label="Capacité" />
+        <StatPill value="6+" label={t("about.pills.services")} />
+        <StatPill value="100%" label={t("about.pills.institutional")} />
+        <StatPill value="∞" label={t("about.pills.capacity")} />
       </motion.div>
 
       {/* Feature cards grid — staggered */}
@@ -151,7 +127,13 @@ function IllustrationPanel({ prefersReduced }) {
         className="grid grid-cols-1 sm:grid-cols-2 gap-3"
       >
         {FEATURES.map((f) => (
-          <FeatureCard key={f.title} {...f} />
+          <FeatureCard
+            key={f.id}
+            icon={f.icon}
+            accent={f.accent}
+            title={t(`about.features.${f.id}.title`)}
+            description={t(`about.features.${f.id}.description`)}
+          />
         ))}
       </motion.div>
     </motion.div>
@@ -163,6 +145,7 @@ function IllustrationPanel({ prefersReduced }) {
    ───────────────────────────────────────────── */
 export default function About() {
   const prefersReduced = useReducedMotion();
+  const { t } = useTranslation();
 
   const leftMotion = useMemo(
     () =>
@@ -233,7 +216,7 @@ export default function About() {
                   marginRight: 12,
                 }}
               />
-              À propos du centre
+              {t("about.kicker")}
             </motion.p>
 
             {/* Main heading */}
@@ -243,9 +226,10 @@ export default function About() {
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
                 className="text-5xl lg:text-7xl font-light leading-[1.05] text-gray-900 dark:text-gray-100"
               >
-                Un pôle régional<br />
+                {t("about.title_1")}
+                <br />
                 <em style={{ color: '#D97706' }} className="not-italic">
-                  d&apos;excellence
+                  {t("about.title_em")}
                 </em>
               </h2>
             </motion.div>
@@ -258,30 +242,14 @@ export default function About() {
                 variants={prefersReduced ? undefined : fadeUp}
                 className="text-base sm:text-lg text-stone-600 dark:text-stone-400 leading-relaxed"
               >
-                Le{" "}
-                <strong className="font-semibold text-stone-800 dark:text-stone-200">
-                  Centre Régional des Formations et des Rencontres El-Maghrib
-                  Al Arabi d'Oujda
-                </strong>{" "}
-                est un espace institutionnel polyvalent mis à la disposition des
-                acteurs du secteur éducatif et des organismes partenaires de la{" "}
-                <em className="not-italic font-medium text-amber-700 dark:text-amber-500">
-                  région de l'Oriental
-                </em>
-                .
+                {t("about.p1")}
               </motion.p>
 
               <motion.p
                 variants={prefersReduced ? undefined : fadeUp}
                 className="text-base sm:text-lg text-stone-600 dark:text-stone-400 leading-relaxed"
               >
-                Il offre des{" "}
-                <strong className="font-semibold text-stone-800 dark:text-stone-200">
-                  infrastructures d'avant-garde
-                </strong>{" "}
-                pour accueillir formations continues, séminaires, réunions
-                pédagogiques, concours et examens dans les meilleures conditions
-                d'encadrement et d'hébergement.
+                {t("about.p2")}
               </motion.p>
             </div>
 
@@ -290,21 +258,21 @@ export default function About() {
               variants={prefersReduced ? undefined : containerVariants}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2"
               role="list"
-              aria-label="Engagements du centre"
+              aria-label={t("about.commitments_aria")}
             >
               {[
-                { icon: "🏅", text: "Excellence académique" },
-                { icon: "🌍", text: "Rayonnement régional" },
-                { icon: "🔒", text: "Cadre institutionnel" },
-                { icon: "📐", text: "Équipements modernes" },
-              ].map(({ icon, text }) => (
+                { id: "academic", icon: "🏅" },
+                { id: "reach", icon: "🌍" },
+                { id: "institutional", icon: "🔒" },
+                { id: "equipment", icon: "📐" },
+              ].map(({ id, icon }) => (
                 <motion.li
-                  key={text}
+                  key={id}
                   variants={prefersReduced ? undefined : cardVariant}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/50 dark:bg-slate-800/50 ring-1 ring-stone-200/60 dark:ring-slate-600/60 text-sm font-medium text-stone-700 dark:text-stone-300"
                 >
                   <span aria-hidden="true">{icon}</span>
-                  {text}
+                  {t(`about.commitments.${id}`)}
                 </motion.li>
               ))}
             </motion.ul>
@@ -314,9 +282,9 @@ export default function About() {
               <a
                 href="#contact"
                 className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-gradient-to-r from-amber-600 via-amber-500 to-orange-500 text-white font-bold text-sm tracking-wide shadow-[0_6px_28px_-6px_rgba(217,119,6,0.35)] hover:shadow-[0_10px_36px_-4px_rgba(217,119,6,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf2ea] dark:focus-visible:ring-offset-slate-900"
-                aria-label="Nous contacter"
+                aria-label={t("about.cta_aria")}
               >
-                <span>Nous contacter</span>
+                <span>{t("about.cta")}</span>
                 <svg
                   className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
                   fill="none"

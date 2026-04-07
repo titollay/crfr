@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "title": "CRFR | Centre régional — Formations et rencontres",
+    "description": "Centre régional pour la formation, les rencontres et le développement des compétences à Oujda, Maroc."
+  },
+  "navbar": {
+    "home": "Accueil",
+    "about": "À propos",
+    "infrastructures": "Infrastructures",
+    "activities": "Activités",
+    "contact": "Contact",
+    "discover": "Découvrir",
+    "login": "Connexion",
+    "brand": "CRFR Maghreb Arabi",
+    "subtitle": "Oujda · المغرب العربي",
+    "aria_dark_light": "Passer en mode clair",
+    "aria_dark_dark": "Passer en mode sombre",
+    "aria_mobile_dark_light": "Mode clair",
+    "aria_mobile_dark_dark": "Mode sombre",
+    "toggle_menu": "Menu",
+    "logo_alt": "Logo CRFR",
+    "lang_fr": "FR",
+    "lang_ar": "AR",
+    "aria_switch_fr": "Passer en français",
+    "aria_switch_ar": "Passer en arabe"
+  },
+  "hero": {
+    "badge": "المركز الجهوي · Oujda · وجدة",
+    "title": "Centre Régional",
+    "tagline": "Formations & Rencontres",
+    "subheading": "المركز الجهوي للتكوينات والملتقيات — المغرب العربي وجدة",
+    "description": "Un espace institutionnel d'excellence dédié à la formation, à l'échange intellectuel et au développement des compétences au cœur de la région de l'Oriental.",
+    "cta_primary": "Découvrir le centre",
+    "cta_secondary": "Prendre contact",
+    "aria_section": "Accueil — Centre régional",
+    "image_alt_1": "CRFR — image 1",
+    "image_alt_2": "CRFR — image 2",
+    "image_alt_3": "CRFR — image 3",
+    "slide_to": "Aller à l'image {{n}}"
+  },
+  "footer": {
+    "brand_short": "CRFR Maghreb",
+    "subtitle": "Oujda · المغرب العربي",
+    "intro": "Centre de Formation et de Ressources Pédagogiques — au service de l'éducation au Maroc Oriental.",
+    "heading_navigation": "Navigation",
+    "heading_services": "Services",
+    "heading_contact": "Contact",
+    "newsletter_label": "Newsletter",
+    "newsletter_placeholder": "votre@email.com",
+    "newsletter_cta": "S'abonner",
+    "copyright": "© {{year}} CRFR Maghreb Arabi — Oujda, Maroc. Tous droits réservés.",
+    "legal_privacy": "Politique de confidentialité",
+    "legal_terms": "Mentions légales",
+    "legal_sitemap": "Plan du site",
+    "quickLinks": {
+      "home": "Accueil",
+      "about": "À propos",
+      "formations": "Formations",
+      "activities": "Activités",
+      "infrastructures": "Infrastructures",
+      "contact": "Contact"
+    },
+    "services": {
+      "training_rooms": "Salles de formation",
+      "amphitheaters": "Amphithéâtres",
+      "accommodation": "Hébergement",
+      "restaurant": "Restauration",
+      "prayer": "Salle de prière",
+      "spaces": "Espaces dédiés"
+    }
+  }
+  ,
+  "stats": {
+    "aria": "Statistiques du centre",
+    "kicker": "En chiffres",
+    "title": "Notre impact",
+    "title_em": "régional",
+    "cards": [
+      "Salles de formation",
+      "Amphithéâtres",
+      "Participants / an",
+      "Espaces dédiés"
+    ]
+  },
+  "about": {
+    "kicker": "À propos du centre",
+    "title_1": "Un pôle régional",
+    "title_em": "d'excellence",
+    "p1": "Le Centre Régional des Formations et des Rencontres El-Maghrib Al Arabi d'Oujda est un espace institutionnel polyvalent mis à la disposition des acteurs du secteur éducatif et des organismes partenaires de la région de l'Oriental.",
+    "p2": "Il offre des infrastructures d'avant-garde pour accueillir formations continues, séminaires, réunions pédagogiques, concours et examens dans les meilleures conditions d'encadrement et d'hébergement.",
+    "commitments_aria": "Engagements du centre",
+    "commitments": {
+      "academic": "Excellence académique",
+      "reach": "Rayonnement régional",
+      "institutional": "Cadre institutionnel",
+      "equipment": "Équipements modernes"
+    },
+    "cta": "Nous contacter",
+    "cta_aria": "Nous contacter",
+    "panel_aria": "Points clés du centre",
+    "panel_kicker": "Région de l'Oriental",
+    "panel_title_1": "Pôle éducatif",
+    "panel_title_2": "d'excellence",
+    "panel_sub": "Oujda · المغرب العربي",
+    "pills": {
+      "services": "Services",
+      "institutional": "Institutionnel",
+      "capacity": "Capacité"
+    },
+    "features": {
+      "training": {
+        "title": "Formations continues",
+        "description": "Programmes de perfectionnement professionnel continus"
+      },
+      "seminars": {
+        "title": "Séminaires & Conférences",
+        "description": "Espaces d'échange et de partage des expertises"
+      },
+      "meetings": {
+        "title": "Réunions pédagogiques",
+        "description": "Cadre institutionnel dédié aux conseils et commissions"
+      },
+      "exams": {
+        "title": "Concours & Examens",
+        "description": "Salles équipées pour toute épreuve officielle"
+      },
+      "accommodation": {
+        "title": "Hébergement",
+        "description": "Capacité d'hébergement confortable pour les déplacements"
+      },
+      "support": {
+        "title": "Encadrement professionnel",
+        "description": "Équipe qualifiée au service de chaque activité"
+      }
+    }
+  },
+  "infra": {
+    "kicker": "Nos équipements",
+    "title": "Infrastructure",
+    "title_em": "d'excellence",
+    "subtitle": "Des installations modernes pensées pour accueillir chaque activité dans les meilleures conditions.",
+    "list_aria": "Liste des installations",
+    "badge_fr": "Centre Régional — Oujda",
+    "badge_ar": "المركز الجهوي — وجدة",
+    "items": {
+      "admin": { "title": "Administration", "subtitle": "Gestion & coordination" },
+      "lounge": { "title": "Salon des hôtes", "subtitle": "Accueil & réception" },
+      "prayer": { "title": "Salle de prière", "subtitle": "Espace spirituel dédié" },
+      "training_rooms": { "title": "6 Salles de formation", "subtitle": "Équipées & climatisées" },
+      "amphitheaters": { "title": "2 Amphithéâtres", "subtitle": "Grande capacité d'accueil" },
+      "accommodation": { "title": "Hébergement", "subtitle": "Chambres confortables" },
+      "restaurant": { "title": "Salle de restauration", "subtitle": "Repas & pauses conviviales" },
+      "kitchen": { "title": "Cuisine équipée", "subtitle": "Matériel professionnel" }
+    }
+  },
+  "activities": {
+    "kicker": "Ce que nous offrons",
+    "title": "Nos",
+    "title_em": "activités",
+    "subtitle": "Nos principales activités et événements professionnels au service du développement des compétences et de l'excellence éducative.",
+    "list_aria": "Liste des activités",
+    "items": {
+      "training": {
+        "title": "Formations continues",
+        "description": "Sessions de perfectionnement professionnel pour les fonctionnaires et les éducateurs dans divers domaines de compétences."
+      },
+      "seminars": {
+        "title": "Séminaires pédagogiques",
+        "description": "Ateliers interactifs animés par des experts pour explorer les dernières approches et pratiques pédagogiques."
+      },
+      "conferences": {
+        "title": "Conférences éducatives",
+        "description": "Interventions thématiques réunissant experts nationaux et internationaux autour de l'innovation éducative."
+      },
+      "meetings": {
+        "title": "Réunions professionnelles",
+        "description": "Rencontres stratégiques entre cadres et partenaires pour coordonner les projets et piloter la transformation."
+      },
+      "contests": {
+        "title": "Concours et examens",
+        "description": "Organisation et supervision de concours professionnels et examens de certification dans un cadre rigoureux."
+      },
+      "events": {
+        "title": "Événements institutionnels",
+        "description": "Cérémonies, journées portes ouvertes et activités culturelles qui renforcent la cohésion de la communauté éducative."
+      }
+    }
+  },
+  "contact": {
+    "kicker": "Contactez-nous",
+    "title_1": "Entamons une",
+    "title_em": "conversation",
+    "subtitle": "Ne vous inquiétez pas pour nous trouver. Retrouvez notre localisation et nos coordonnées ici. Nous sommes toujours disponibles pour répondre à vos besoins.",
+    "stay_connected_title": "Restez Connectés",
+    "stay_connected_subtitle": "Restez en contact avec notre équipe ; nous sommes disponibles pour répondre à vos besoins à tout moment.",
+    "info": {
+      "phone": "Téléphone",
+      "email": "Email",
+      "address": "Adresse"
+    },
+    "form_kicker": "Écrivez-nous",
+    "form_title": "Envoyez-nous un message",
+    "thanks_title": "Merci",
+    "thanks_subtitle": "Votre message a été envoyé. Nous vous contacterons bientôt.",
+    "form": {
+      "name_label": "Nom Complet",
+      "name_placeholder": "Jean Dupont",
+      "email_label": "Adresse Email",
+      "email_placeholder": "moi@exemple.com",
+      "message_label": "Message",
+      "message_placeholder": "Dites-nous comment nous pouvons vous aider...",
+      "submit": "Envoyer le Message"
+    },
+    "image_alt": "Contact",
+    "caption": "\"CRFR est là pour vous\""
+  }
+}

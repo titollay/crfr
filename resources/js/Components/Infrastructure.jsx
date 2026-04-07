@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import InfrastructureCard from "./InfrastructureCard";
 
 /* ─────────────────────────────────────────────
@@ -35,51 +36,43 @@ const slideRight = {
    ───────────────────────────────────────────── */
 const ITEMS = [
   {
+    id: "admin",
     icon: "🏛️",
-    titleFr: "Administration",
-    subtitle: "Gestion & coordination",
     accent: "amber",
   },
   {
+    id: "lounge",
     icon: "🛋️",
-    titleFr: "Salon des hôtes",
-    subtitle: "Accueil & réception",
     accent: "blue",
   },
   {
+    id: "prayer",
     icon: "🕌",
-    titleFr: "Salle de prière",
-    subtitle: "Espace spirituel dédié",
     accent: "emerald",
   },
   {
+    id: "training_rooms",
     icon: "📚",
-    titleFr: "6 Salles de formation",
-    subtitle: "Équipées & climatisées",
     accent: "amber",
   },
   {
+    id: "amphitheaters",
     icon: "🎓",
-    titleFr: "2 Amphithéâtres",
-    subtitle: "Grande capacité d'accueil",
     accent: "blue",
   },
   {
+    id: "accommodation",
     icon: "🏨",
-    titleFr: "Hébergement",
-    subtitle: "Chambres confortables",
     accent: "emerald",
   },
   {
+    id: "restaurant",
     icon: "🍽️",
-    titleFr: "Salle de restauration",
-    subtitle: "Repas & pauses conviviales",
     accent: "rose",
   },
   {
+    id: "kitchen",
     icon: "👨‍🍳",
-    titleFr: "Cuisine équipée",
-    subtitle: "Matériel professionnel",
     accent: "violet",
   },
 ];
@@ -89,6 +82,7 @@ const ITEMS = [
    ───────────────────────────────────────────── */
 export default function Infrastructure() {
   const prefersReduced = useReducedMotion();
+  const { t } = useTranslation();
 
   const headerMotion = useMemo(
     () =>
@@ -201,7 +195,7 @@ export default function Infrastructure() {
                 marginRight: 12,
               }}
             />
-            Nos équipements
+            {t("infra.kicker")}
           </motion.p>
 
           {/* Heading */}
@@ -211,9 +205,9 @@ export default function Infrastructure() {
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
               className="text-5xl lg:text-7xl font-light leading-[1.05] text-gray-900"
             >
-              Infrastructure{" "}
+              {t("infra.title")}{" "}
               <em style={{ color: '#D97706' }} className="not-italic">
-                d&apos;excellence
+                {t("infra.title_em")}
               </em>
             </h2>
           </motion.div>
@@ -223,8 +217,7 @@ export default function Infrastructure() {
             variants={prefersReduced ? undefined : fadeUp}
             className="max-w-xl text-base sm:text-lg text-stone-500 leading-relaxed"
           >
-            Des installations modernes pensées pour accueillir chaque activité
-            dans les meilleures conditions.
+            {t("infra.subtitle")}
           </motion.p>
         </motion.div>
 
@@ -233,10 +226,16 @@ export default function Infrastructure() {
           {...gridMotion}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
           role="list"
-          aria-label="Liste des installations"
+          aria-label={t("infra.list_aria")}
         >
           {ITEMS.map((item) => (
-            <InfrastructureCard key={item.titleFr} {...item} />
+            <InfrastructureCard
+              key={item.id}
+              icon={item.icon}
+              accent={item.accent}
+              titleFr={t(`infra.items.${item.id}.title`)}
+              subtitle={t(`infra.items.${item.id}.subtitle`)}
+            />
           ))}
         </motion.div>
 
@@ -253,14 +252,14 @@ export default function Infrastructure() {
               🏛️
             </span>
             <span className="text-sm font-semibold text-stone-600">
-              Centre Régional — Oujda
+              {t("infra.badge_fr")}
             </span>
             <span
               className="text-sm text-stone-400 font-semibold"
               dir="rtl"
               lang="ar"
             >
-              المركز الجهوي — وجدة
+              {t("infra.badge_ar")}
             </span>
           </motion.div>
         </motion.div>
