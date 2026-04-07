@@ -1,6 +1,9 @@
-import { motion, useReducedMotion } from "framer-motion";
-import { useRef, useCallback, useMemo } from "react";
-import hero from "../../assets/hero.png";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import her1 from "../../assets/her1.jpeg";
+import her2 from "../../assets/her2.jpeg";
+import her3 from "../../assets/her3.jpeg";
 /* ═══════════════════════════════════════════════
    Animation System
    ═══════════════════════════════════════════════ */
@@ -79,16 +82,62 @@ function BackgroundEffects() {
 }
 
 function Badge() {
+  const prefersReduced = useReducedMotion();
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.resolvedLanguage || i18n.language || "fr").startsWith("ar");
+
   return (
-    <motion.div variants={fadeUp} className="flex justify-center lg:justify-start">
+    <motion.div
+      variants={fadeUp}
+      className={`flex justify-center ${isAr ? "lg:justify-end" : "lg:justify-start"}`}
+    >
       <div className="group inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-amber-200/40 dark:border-amber-700/40 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl shadow-[0_2px_16px_-4px_rgba(120,80,20,0.06)] transition-colors duration-300 hover:bg-white/70 dark:hover:bg-slate-700/60 cursor-default select-none">
         <span className="flex gap-1.5" aria-hidden="true">
-          <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20" />
-          <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-400/20" />
-          <span className="w-2 h-2 rounded-full bg-blue-500 ring-2 ring-blue-500/20" />
+          {/* Ambulance-style blinking lights */}
+          <motion.span
+            className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/25"
+            animate={
+              prefersReduced
+                ? { opacity: 1, scale: 1 }
+                : { opacity: [0.25, 1, 0.25], scale: [1, 1.2, 1] }
+            }
+            transition={
+              prefersReduced
+                ? undefined
+                : { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+            }
+          />
+
+          <motion.span
+            className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-400/20"
+            animate={
+              prefersReduced
+                ? { opacity: 1, scale: 1 }
+                : { opacity: [0.35, 0.8, 0.35] }
+            }
+            transition={
+              prefersReduced
+                ? undefined
+                : { duration: 0.75, repeat: Infinity, ease: "easeInOut", delay: 0.12 }
+            }
+          />
+
+          <motion.span
+            className="w-2 h-2 rounded-full bg-blue-500 ring-2 ring-blue-500/25"
+            animate={
+              prefersReduced
+                ? { opacity: 1, scale: 1 }
+                : { opacity: [1, 0.25, 1], scale: [1.2, 1, 1.2] }
+            }
+            transition={
+              prefersReduced
+                ? undefined
+                : { duration: 0.75, repeat: Infinity, ease: "easeInOut" }
+            }
+          />
         </span>
         <span className="text-xs sm:text-[0.8rem] font-semibold tracking-widest text-stone-600 dark:text-stone-300 uppercase">
-          المركز الجهوي · Oujda · وجدة
+          {t("hero.badge")}
         </span>
       </div>
     </motion.div>
@@ -97,10 +146,15 @@ function Badge() {
 
 /** Primary + secondary CTA buttons */
 function CTAButtons({ onPrimary, onSecondary }) {
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.resolvedLanguage || i18n.language || "fr").startsWith("ar");
+
   return (
     <motion.div
       variants={fadeUp}
-      className="flex flex-col sm:flex-row gap-4 sm:gap-5 pt-2 lg:justify-start justify-center"
+      className={`flex flex-col sm:flex-row gap-4 sm:gap-5 pt-2 justify-center ${
+        isAr ? "lg:justify-end" : "lg:justify-start"
+      }`}
     >
       {/* Primary CTA */}
       <button
@@ -108,7 +162,7 @@ function CTAButtons({ onPrimary, onSecondary }) {
         onClick={onPrimary}
         className="group relative inline-flex justify-center items-center gap-2.5 w-full sm:w-auto px-9 py-4 rounded-full bg-gradient-to-r from-amber-600 via-amber-500 to-orange-500 text-white font-bold text-base sm:text-[1.05rem] tracking-wide shadow-[0_8px_32px_-6px_rgba(217,119,6,0.35)] hover:shadow-[0_12px_40px_-4px_rgba(217,119,6,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf2ea] dark:focus-visible:ring-offset-slate-900 overflow-hidden"
       >
-        <span className="relative z-10">Découvrir le centre</span>
+        <span className="relative z-10">{t("hero.cta_primary")}</span>
         <svg
           className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300"
           fill="none"
@@ -133,7 +187,7 @@ function CTAButtons({ onPrimary, onSecondary }) {
         onClick={onSecondary}
         className="w-full sm:w-auto px-9 py-4 rounded-full bg-white/40 dark:bg-slate-800/40 border-2 border-stone-200/60 dark:border-slate-600/60 backdrop-blur-sm text-stone-700 dark:text-stone-200 font-bold text-base sm:text-[1.05rem] tracking-wide hover:border-amber-400/50 hover:bg-amber-50/30 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-stone-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf2ea] dark:focus-visible:ring-offset-slate-900"
       >
-        Prendre contact
+        {t("hero.cta_secondary")}
       </button>
     </motion.div>
   );
@@ -144,8 +198,28 @@ function CTAButtons({ onPrimary, onSecondary }) {
    ═══════════════════════════════════════════════ */
 
 export default function Section() {
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.resolvedLanguage || i18n.language || "fr").startsWith("ar");
   const sectionRef = useRef(null);
   const prefersReduced = useReducedMotion();
+  const [activeImage, setActiveImage] = useState(0);
+
+  const images = useMemo(
+    () => [
+      { src: her1, alt: t("hero.image_alt_1") },
+      { src: her2, alt: t("hero.image_alt_2") },
+      { src: her3, alt: t("hero.image_alt_3") },
+    ],
+    [t],
+  );
+
+  useEffect(() => {
+    if (prefersReduced) return;
+    const id = window.setInterval(() => {
+      setActiveImage((i) => (i + 1) % images.length);
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [images.length, prefersReduced]);
 
   // Smooth-scroll helper accounting for fixed nav (~80px)
   const scrollTo = useCallback((id) => {
@@ -174,12 +248,16 @@ export default function Section() {
       id="hero"
       ref={sectionRef}
       className="relative isolate flex flex-col justify-center items-center min-h-[100svh] px-5 sm:px-8 lg:px-10 py-28 sm:py-36 overflow-hidden selection:bg-amber-200/50 selection:text-amber-900 dark:selection:bg-amber-800/50 dark:selection:text-amber-100"
-      aria-label="Accueil — Centre Régional"
+      aria-label={t("hero.aria_section")}
     >
       <BackgroundEffects />
 
       {/* ── Content container ── */}
-      <div className="relative z-10 w-full max-w-6xl lg:max-w-7xl mx-auto flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 lg:gap-8 items-center text-center lg:text-left">
+      <div
+        className={`relative z-10 w-full max-w-6xl lg:max-w-7xl mx-auto flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 lg:gap-8 items-center text-center ${
+          isAr ? "lg:text-right" : "lg:text-left"
+        }`}
+      >
         <motion.div {...motionProps} className="flex flex-col gap-8 sm:gap-10">
           <Badge />
 
@@ -190,7 +268,7 @@ export default function Section() {
               className="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-[4.5rem] xl:text-[5.25rem] font-extrabold tracking-[-0.025em] leading-[1.05]"
             >
               <span className="text-transparent bg-clip-text bg-gradient-to-br from-amber-700 via-amber-500 to-orange-500">
-                Centre Régional
+                {t("hero.title")}
               </span>
             </motion.h1>
 
@@ -198,9 +276,7 @@ export default function Section() {
               variants={prefersReduced ? undefined : fadeUp}
               className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.25rem] font-semibold tracking-tight text-stone-800 dark:text-stone-100 leading-snug"
             >
-              Formations{" "}
-              <span className="text-stone-300 dark:text-stone-500 font-light">&amp;</span>{" "}
-              Rencontres
+              {t("hero.tagline")}
             </motion.p>
           </div>
 
@@ -211,17 +287,17 @@ export default function Section() {
             dir="rtl"
             lang="ar"
           >
-            المركز الجهوي للتكوينات والملتقيات — المغرب العربي وجدة
+            {t("hero.subheading")}
           </motion.h2>
 
           {/* ── Value proposition ── */}
           <motion.p
             variants={prefersReduced ? undefined : fadeUp}
-            className="text-base sm:text-lg md:text-xl text-stone-400 dark:text-stone-500 lg:mr-auto leading-relaxed max-w-xl"
+            className={`text-base sm:text-lg md:text-xl text-stone-400 dark:text-stone-500 leading-relaxed max-w-xl ${
+              isAr ? "lg:ml-auto" : "lg:mr-auto"
+            }`}
           >
-            Un espace institutionnel d'excellence dédié à la formation, à
-            l'échange intellectuel et au développement des compétences au cœur
-            de la région de l'Oriental.
+            {t("hero.description")}
           </motion.p>
 
           {/* ── CTAs ── */}
@@ -241,11 +317,41 @@ export default function Section() {
           {/* Subtle glow behind image */}
           <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/20 to-orange-400/20 dark:from-amber-500/10 dark:to-orange-500/10 blur-3xl rounded-full scale-90" />
 
-          <img
-            src={hero}
-            alt="Présentation CRFR"
-            className="relative z-10 w-full h-auto object-contain drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
-          />
+          <div className="relative z-10 w-full overflow-hidden rounded-3xl drop-shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
+
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.img
+                key={activeImage}
+                src={images[activeImage].src}
+                alt={images[activeImage].alt}
+                className="w-full h-auto object-cover aspect-[4/3]"
+                initial={prefersReduced ? false : { opacity: 0, x: 16, scale: 1.01 }}
+                animate={prefersReduced ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1 }}
+                exit={prefersReduced ? { opacity: 0 } : { opacity: 0, x: -16, scale: 0.99 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                loading="eager"
+                decoding="async"
+              />
+            </AnimatePresence>
+
+            {/* Dots */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImage(idx)}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    idx === activeImage
+                      ? "w-8 bg-white/80"
+                      : "w-2.5 bg-white/40 hover:bg-white/60"
+                  }`}
+                  aria-label={t("hero.slide_to", { n: idx + 1 })}
+                />
+              ))}
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>

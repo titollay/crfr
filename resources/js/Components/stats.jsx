@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { statsData } from "../../data/homeData";
+import { useTranslation } from "react-i18next";
 
 /* ═══════════════════════════════════════════════
    Easing helper — easeOutExpo for smooth deceleration
@@ -120,10 +121,12 @@ function Counter({ to, label, suffix = "+", colorClass = "red" }) {
    ═══════════════════════════════════════════════ */
 
 export default function Stats() {
+  const { t } = useTranslation();
+
   return (
     <section
       className="relative py-24 sm:py-32 px-5 sm:px-8 lg:px-10"
-      aria-label="Statistiques du centre"
+      aria-label={t("stats.aria")}
     >
       {/* Section heading */}
       <div className="mb-16 sm:mb-20 max-w-6xl mx-auto">
@@ -141,15 +144,15 @@ export default function Stats() {
               marginRight: 12,
             }}
           />
-          En chiffres
+          {t("stats.kicker")}
         </p>
         <h2
           style={{ fontFamily: "'Cormorant Garamond', serif" }}
           className="text-5xl lg:text-7xl font-light leading-[1.05] text-gray-900 dark:text-gray-100"
         >
-          Notre impact{' '}
+          {t("stats.title")}{" "}
           <em style={{ color: '#D97706' }} className="not-italic">
-            régional
+            {t("stats.title_em")}
           </em>
         </h2>
       </div>
@@ -157,7 +160,11 @@ export default function Stats() {
       {/* Cards grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
         {statsData.map((stat, i) => (
-          <Counter key={stat.label || i} {...stat} />
+          <Counter
+            key={stat.label || i}
+            {...stat}
+            label={t(`stats.cards.${i}`)}
+          />
         ))}
       </div>
     </section>

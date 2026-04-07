@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
- import img1 from "../../assets/contact.webp";
+import { useTranslation } from "react-i18next";
+import img1 from "../../assets/contact.webp";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 40 },
@@ -25,7 +26,7 @@ const contactInfo = [
         />
       </svg>
     ),
-    label: "Téléphone",
+    id: "phone",
     value: "+1 234 567 890",
     href: "tel:+1234567890",
   },
@@ -45,7 +46,7 @@ const contactInfo = [
         />
       </svg>
     ),
-    label: "Email",
+    id: "email",
     value: "contact@example.com",
     href: "mailto:contact@example.com",
   },
@@ -70,7 +71,7 @@ const contactInfo = [
         />
       </svg>
     ),
-    label: "Adresse",
+    id: "address",
     value: "123 Rue Principale, New York",
     href: "#",
   },
@@ -107,6 +108,7 @@ const socials = [
 ];
 
 export default function Contact() {
+  const { t } = useTranslation();
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -369,16 +371,15 @@ export default function Contact() {
             <div className="relative">
               <p className="text-xs uppercase tracking-[0.3em] text-orange-500 mb-4">
                 <span className="divider-line" />
-                Contactez-nous
+                {t("contact.kicker")}
               </p>
               <h2 className="contact-display text-5xl lg:text-7xl font-light leading-[1.05] mb-4 text-gray-900 dark:text-gray-100">
-                Entamons une<br />
-                <em className="text-orange-400">conversation</em>
+                {t("contact.title_1")}
+                <br />
+                <em className="text-orange-400">{t("contact.title_em")}</em>
               </h2>
               <p className="text-sm text-gray-400 max-w-sm leading-relaxed mt-6">
-                Ne vous inquiétez pas pour nous trouver. Retrouvez notre
-                localisation et nos coordonnées ici. Nous sommes toujours
-                disponibles pour répondre à vos besoins.
+                {t("contact.subtitle")}
               </p>
             </div>
           </motion.div>
@@ -423,11 +424,10 @@ export default function Contact() {
             >
               <div>
                 <h3 className="contact-display text-2xl font-light mb-6 text-gray-800 dark:text-gray-200">
-                  Restez Connectés
+                  {t("contact.stay_connected_title")}
                 </h3>
                 <p className="text-sm text-gray-400 mb-8 leading-relaxed">
-                  Restez en contact avec notre équipe ; nous sommes disponibles
-                  pour répondre à vos besoins à tout moment.
+                  {t("contact.stay_connected_subtitle")}
                 </p>
 
                 <div>
@@ -435,7 +435,9 @@ export default function Contact() {
                     <a key={i} href={item.href} className="contact-info-item">
                       <div className="info-icon">{item.icon}</div>
                       <div>
-                        <div className="info-label">{item.label}</div>
+                        <div className="info-label">
+                          {t(`contact.info.${item.id}`)}
+                        </div>
                         <div className="info-value">{item.value}</div>
                       </div>
                     </a>
@@ -470,10 +472,10 @@ export default function Contact() {
               <div className="border-t border-gray-200 pt-10">
                 <p className="text-xs uppercase tracking-[0.3em] text-orange-500 mb-2">
                   <span className="divider-line" />
-                  Écrivez-nous
+                  {t("contact.form_kicker")}
                 </p>
                 <h3 className="contact-display text-3xl lg:text-4xl font-light mb-8 text-gray-900 dark:text-gray-100">
-                  Envoyez-nous un message
+                  {t("contact.form_title")}
                 </h3>
 
                 {submitted ? (
@@ -483,10 +485,10 @@ export default function Contact() {
                     className="border border-orange-400/30 bg-orange-50 p-8 text-center"
                   >
                     <p className="contact-display text-2xl font-light text-orange-500 mb-2">
-                      Merci
+                      {t("contact.thanks_title")}
                     </p>
                     <p className="text-sm text-gray-400">
-                      Votre message a été envoyé. Nous vous contacterons bientôt.
+                      {t("contact.thanks_subtitle")}
                     </p>
                   </motion.div>
                 ) : (
@@ -494,11 +496,11 @@ export default function Contact() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
                         <label className="block text-xs uppercase tracking-[0.15em] text-gray-400 mb-3">
-                          Nom Complet
+                          {t("contact.form.name_label")}
                         </label>
                         <input
                           type="text"
-                          placeholder="Jean Dupont"
+                          placeholder={t("contact.form.name_placeholder")}
                           required
                           className="line-input"
                           value={formState.name}
@@ -509,11 +511,11 @@ export default function Contact() {
                       </div>
                       <div>
                         <label className="block text-xs uppercase tracking-[0.15em] text-gray-400 mb-3">
-                          Adresse Email
+                          {t("contact.form.email_label")}
                         </label>
                         <input
                           type="email"
-                          placeholder="moi@exemple.com"
+                          placeholder={t("contact.form.email_placeholder")}
                           required
                           className="line-input"
                           value={formState.email}
@@ -529,11 +531,11 @@ export default function Contact() {
 
                     <div>
                       <label className="block text-xs uppercase tracking-[0.15em] text-gray-400 mb-3">
-                        Message
+                        {t("contact.form.message_label")}
                       </label>
                       <textarea
                         rows="5"
-                        placeholder="Dites-nous comment nous pouvons vous aider..."
+                        placeholder={t("contact.form.message_placeholder")}
                         required
                         className="line-textarea"
                         value={formState.message}
@@ -552,7 +554,7 @@ export default function Contact() {
                         className="relative z-10 text-xs xl:text-sm shadow-2xl text-shadow-2xs font-bold  2xl:text-base sm:text-sm text-[#FC8C06] uppercase  group-hover:text-white transition-colors"
                         href=""
                       >
-                        Envoyer le Message →
+                        {t("contact.form.submit")} →
                       </a>
                     </div>
                   </form>
@@ -577,14 +579,14 @@ export default function Contact() {
                 <div className="absolute -bottom-3 -right-3 w-24 h-24 border-b border-r border-orange-500/30 pointer-events-none z-10" />
                 <img
                   src={img1}
-                  alt="Contact"
+                  alt={t("contact.image_alt")}
                   className="w-full h-80 lg:h-[440px] object-cover"
                   style={{ filter: "brightness(0.6) contrast(1.05)" }}
                 />
                 {/* Caption overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
                   <p className="contact-display text-xl font-light italic text-[#e8e0d5]/80">
-                    "CRFR est là pour vous"
+                    {t("contact.caption")}
                   </p>
                   <p className="text-xs text-[#e8e0d5]/40 mt-1 uppercase tracking-widest">
                     

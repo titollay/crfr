@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import logo from "../../assets/logo.png";
 import useDarkMode from "../hooks/useDarkMode";
+import LanguageSwitcher from "./LanguageSwitcher";
 
-const navLinks = [
-  { label: "Accueil", href: "/" },
-  { label: "À propos", href: "#about" },
-
-  { label: "Infrastructures", href: "#infrastructures" },
-  { label: "Activités", href: "#activites" },
-  { label: "Contact", href: "#contact" },
+const NAV_LINK_DEFS = [
+  { key: "home", href: "/" },
+  { key: "about", href: "#about" },
+  { key: "infrastructures", href: "#infrastructures" },
+  { key: "activities", href: "#activites" },
+  { key: "contact", href: "#contact" },
 ];
 
 /* ── Animated Sun / Moon SVG icon ── */
@@ -54,11 +55,21 @@ function DarkModeIcon({ dark }) {
 }
 
 export default function NavBar({ className = "" }) {
+  const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dark, setDark] = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const navLinks = useMemo(
+    () =>
+      NAV_LINK_DEFS.map((link) => ({
+        ...link,
+        label: t(`navbar.${link.key}`),
+      })),
+    [t],
+  );
 
   const handleAnchorClick = (e, link) => {
     e.preventDefault();
@@ -260,18 +271,18 @@ export default function NavBar({ className = "" }) {
             <img
               src={logo}
               className="w-12 sm:w-14 xl:w-16 h-auto object-contain"
-              alt="CRFR logo"
+              alt={t("navbar.logo_alt")}
             />
             <div className="flex flex-col items-center">
-              <div className="text-lg font-bold text-[#111] dark:text-gray-100">CRFR Maghreb Arabi</div>
-              <div className="text-sm font-semibold text-[#D97706]">Oujda · المغرب العربي</div>
+              <div className="text-lg font-bold text-[#111] dark:text-gray-100">{t("navbar.brand")}</div>
+              <div className="text-sm font-semibold text-[#D97706]">{t("navbar.subtitle")}</div>
             </div>
           </a>
 
           <nav className="hidden lg:block">
             <ul className="flex flex-row items-center text-xs xl:text-sm 2xl:text-base md:text-xs gap-2 xl:gap-2 md:gap-4 sm:gap-3 text-shadow-2xs bold justify-around space-x-11">
               {navLinks.map((link) => (
-                <li key={link.label}>
+                <li key={link.href}>
                   <a
                     href={link.href}
                     className="nav-link"
@@ -287,11 +298,12 @@ export default function NavBar({ className = "" }) {
           {/* Desktop right */}
           <div className="hidden lg:block">
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               {/* Dark mode toggle */}
               <button
                 className="dark-toggle"
                 onClick={() => setDark((d) => !d)}
-                aria-label={dark ? "Passer en mode clair" : "Passer en mode sombre"}
+                aria-label={dark ? t("navbar.aria_dark_light") : t("navbar.aria_dark_dark")}
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <DarkModeIcon key={dark ? "moon" : "sun"} dark={dark} />
@@ -304,7 +316,7 @@ export default function NavBar({ className = "" }) {
                   href={s.href}
                   onClick={s.onClick || undefined}
                   className="nav-social-btn"
-                  aria-label={s.label}
+                  aria-label={t("navbar.login")}
                   style={{ cursor: "pointer" }}
                 >
                   {s.icon}
@@ -318,7 +330,7 @@ export default function NavBar({ className = "" }) {
                     href="#contact"
                     onClick={(e) => { e.preventDefault(); const el = document.getElementById('contact'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
                   >
-                    Découvrir
+                    {t("navbar.discover")}
                   </a>
                 </div>
               )}
@@ -327,11 +339,12 @@ export default function NavBar({ className = "" }) {
 
           {/* Hamburger + mobile dark toggle */}
           <div className="lg:hidden flex items-center gap-3">
+            <LanguageSwitcher />
             {/* Mobile dark mode toggle */}
             <button
               className="dark-toggle"
               onClick={() => setDark((d) => !d)}
-              aria-label={dark ? "Mode clair" : "Mode sombre"}
+              aria-label={dark ? t("navbar.aria_mobile_dark_light") : t("navbar.aria_mobile_dark_dark")}
             >
               <AnimatePresence mode="wait" initial={false}>
                 <DarkModeIcon key={dark ? "moon" : "sun"} dark={dark} />
@@ -342,7 +355,7 @@ export default function NavBar({ className = "" }) {
             <button
               className="flex flex-col justify-center items-center gap-[5px] w-9 h-9 relative z-50"
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
+              aria-label={t("navbar.toggle_menu")}
             >
               <span
                 className="ham-line"
@@ -383,7 +396,7 @@ export default function NavBar({ className = "" }) {
               <div className="px-6 py-4">
                 {navLinks.map((link, i) => (
                   <motion.div
-                    key={link.label}
+                    key={link.href}
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.06, duration: 0.3 }}
@@ -413,7 +426,7 @@ export default function NavBar({ className = "" }) {
                       navigate("/login");
                     }}
                   >
-                    Login
+                    {t("navbar.login")}
                   </a>
                 </motion.div>
               </div>

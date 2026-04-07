@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import ActivityCard from "./ActivityCard";
 
 /* ─────────────────────────────────────────────
@@ -34,48 +35,12 @@ const slideRight = {
    Activities data
    ───────────────────────────────────────────── */
 const ACTIVITIES = [
-  {
-    icon: "📖",
-    title: "Formations continues",
-    description:
-      "Sessions de perfectionnement professionnel pour les fonctionnaires et les éducateurs dans divers domaines de compétences.",
-    accent: "amber",
-  },
-  {
-    icon: "🎤",
-    title: "Séminaires pédagogiques",
-    description:
-      "Ateliers interactifs animés par des experts pour explorer les dernières approches et pratiques pédagogiques.",
-    accent: "blue",
-  },
-  {
-    icon: "🏛️",
-    title: "Conférences éducatives",
-    description:
-      "Interventions thématiques réunissant experts nationaux et internationaux autour de l'innovation éducative.",
-    accent: "emerald",
-  },
-  {
-    icon: "🤝",
-    title: "Réunions professionnelles",
-    description:
-      "Rencontres stratégiques entre cadres et partenaires pour coordonner les projets et piloter la transformation.",
-    accent: "violet",
-  },
-  {
-    icon: "✍️",
-    title: "Concours et examens",
-    description:
-      "Organisation et supervision de concours professionnels et examens de certification dans un cadre rigoureux.",
-    accent: "rose",
-  },
-  {
-    icon: "🎉",
-    title: "Événements institutionnels",
-    description:
-      "Cérémonies, journées portes ouvertes et activités culturelles qui renforcent la cohésion de la communauté éducative.",
-    accent: "sky",
-  },
+  { id: "training", icon: "📖", accent: "amber" },
+  { id: "seminars", icon: "🎤", accent: "blue" },
+  { id: "conferences", icon: "🏛️", accent: "emerald" },
+  { id: "meetings", icon: "🤝", accent: "violet" },
+  { id: "contests", icon: "✍️", accent: "rose" },
+  { id: "events", icon: "🎉", accent: "sky" },
 ];
 
 /* ─────────────────────────────────────────────
@@ -83,6 +48,7 @@ const ACTIVITIES = [
    ───────────────────────────────────────────── */
 export default function Activities() {
   const prefersReduced = useReducedMotion();
+  const { t } = useTranslation();
 
   const headerMotion = useMemo(
     () =>
@@ -195,7 +161,7 @@ export default function Activities() {
                 marginRight: 12,
               }}
             />
-            Ce que nous offrons
+            {t("activities.kicker")}
           </motion.p>
 
           {/* Heading */}
@@ -205,9 +171,9 @@ export default function Activities() {
               style={{ fontFamily: "'Cormorant Garamond', serif" }}
               className="text-5xl lg:text-7xl font-light leading-[1.05] text-gray-900 dark:text-gray-100"
             >
-              Nos{" "}
+              {t("activities.title")}{" "}
               <em style={{ color: '#D97706' }} className="not-italic">
-                activités
+                {t("activities.title_em")}
               </em>
             </h2>
           </motion.div>
@@ -217,8 +183,7 @@ export default function Activities() {
             variants={prefersReduced ? undefined : fadeUp}
             className="max-w-2xl text-base sm:text-lg text-stone-500 leading-relaxed"
           >
-            Nos principales activités et événements professionnels au service du
-            développement des compétences et de l&apos;excellence éducative.
+            {t("activities.subtitle")}
           </motion.p>
         </motion.div>
 
@@ -227,10 +192,16 @@ export default function Activities() {
           {...gridMotion}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
           role="list"
-          aria-label="Liste des activités"
+          aria-label={t("activities.list_aria")}
         >
           {ACTIVITIES.map((activity) => (
-            <ActivityCard key={activity.title} {...activity} />
+            <ActivityCard
+              key={activity.id}
+              icon={activity.icon}
+              accent={activity.accent}
+              title={t(`activities.items.${activity.id}.title`)}
+              description={t(`activities.items.${activity.id}.description`)}
+            />
           ))}
         </motion.div>
       </div>

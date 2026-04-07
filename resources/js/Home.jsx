@@ -6,29 +6,20 @@ import Activities from "./Components/Activities";
 import Contact from "./Components/Contact";
 import Footer from "./Components/Footer";
 
-import { useRef } from "react";
-import { useScroll, useTransform, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
-import config from "./config";
 import Stats from "./Components/stats";
 
 export default function Home() {
-  const sectionRef = useRef(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-
-  const y = useTransform(scrollYProgress, [0.3, 1], ["0%", "5%"]);
+  const { t } = useTranslation();
 
   return (
     <>
       <Helmet>
-        <title>{config.BRAND_NAME} | Premium E-Commerce Experience</title>
-        <meta name="description" content={`Discover premium products at ${config.BRAND_NAME}. High-quality electronics, fashion, and home essentials with fast delivery.`} />
-        <meta property="og:title" content={`${config.BRAND_NAME} | Premium E-Commerce Experience`} />
-        <meta property="og:description" content={`Shop the best selection of electronics, clothing, and more at ${config.BRAND_NAME}.`} />
+        <title>{t("meta.title")}</title>
+        <meta name="description" content={t("meta.description")} />
+        <meta property="og:title" content={t("meta.title")} />
+        <meta property="og:description" content={t("meta.description")} />
         <meta property="og:type" content="website" />
       </Helmet>
       {/* ===== Hero ===== */}
