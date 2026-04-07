@@ -44,6 +44,7 @@ export default function Login() {
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
       navigate('/dashboard');
     } catch (err) {
+      console.log(err.response.data)
       setError("Identifiants incorrects, veuillez réessayer.");
     } finally {
       setLoading(false);
