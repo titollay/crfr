@@ -11,18 +11,34 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $table->id('id_resev');
+        Schema::create('reservations', function (Blueprint $table) {
+            $table->id('id_resev');
             $table->unsignedBigInteger('id_inter');
             $table->unsignedBigInteger('id_chambre');
             $table->date('date_debut');
             $table->date('date_fin');
-            $table->unsignedBigInteger('created_by'); // Relie à id_user
+            $table->unsignedBigInteger('created_by'); // Relie à users.id_user
             $table->string('statut');
             $table->timestamps();
 
-            $table->foreign('id_inter')->references('id_inter')->on('intervenants');
-            $table->foreign('id_chambre')->references('id_chambre')->on('chambres');
-            $table->foreign('created_by')->references('id_user')->on('users');
+            $table
+                ->foreign('id_inter')
+                ->references('id_inter')
+                ->on('intervenants')
+                ->onDelete('cascade');
+
+            $table
+                ->foreign('id_chambre')
+                ->references('id_chambre')
+                ->on('chambres')
+                ->onDelete('cascade');
+
+            $table
+                ->foreign('created_by')
+                ->references('id_user')
+                ->on('users')
+                ->onDelete('cascade');
+        });
     }
 
     /**

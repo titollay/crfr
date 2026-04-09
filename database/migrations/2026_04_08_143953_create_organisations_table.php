@@ -18,7 +18,13 @@ return new class extends Migration
             $table->string('type');
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->timestamps(); // Pour created_at
-});
+
+            $table
+                ->foreign('parent_id')
+                ->references('id_org')
+                ->on('organisations')
+                ->nullOnDelete();
+        });
     }
 
     /**

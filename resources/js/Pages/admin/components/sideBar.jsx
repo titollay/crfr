@@ -1,52 +1,54 @@
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
 import { Link } from "react-router-dom";
 
-const navItems = [
-    { href: "/index", icon: "fa-solid fa-gauge", label: "Dashboard" },
-
-    { href: "/index/users", icon: "fa-solid fa-users", label: "Users" },
-
+const NAV_SECTIONS = [
     {
-        href: "/index/categories",
-        icon: "fa-solid fa-layer-group",
-        label: "Categories",
-    },
-
-    {
-        href: "/index/products",
-        icon: "fa-solid fa-boxes-stacked",
-        label: "Products ",
-    },
-
-    {
-        href: "/index/product",
-        icon: "fa-solid fa-box",
-        label: "Product ",
-    },
-
-    {
-        href: "/index/orders",
-        icon: "fa-solid fa-cart-shopping",
-        label: "Orders",
-    },
-
-    {
-        href: "/index/addresses",
-        icon: "fa-solid fa-location-dot",
-        label: "Addresses",
+        title: "DASHBOARD",
+        items: [{ href: "/index", icon: "fa-solid fa-gauge", label: "Dashboard" }],
     },
     {
-        href: "/index/newsletter",
-        icon: "fa-solid fa-paper-plane",
-        label: "Newsletter",
+        title: "HOTEL",
+        items: [
+            { href: "/index/chambres", icon: "fa-solid fa-bed", label: "Chambres" },
+            { href: "/index/reservations", icon: "fa-solid fa-calendar-check", label: "Reservations" },
+            { href: "/index/intervenants", icon: "fa-solid fa-user-tie", label: "Intervenants" },
+        ],
     },
-    { href: "/index/settings", icon: "fa-solid fa-gear", label: "Settings" },
+    {
+        title: "FORMATION",
+        items: [
+            { href: "/index/formations", icon: "fa-solid fa-graduation-cap", label: "Formations" },
+            { href: "/index/planning", icon: "fa-solid fa-calendar-days", label: "Planning" },
+            { href: "/index/organisations", icon: "fa-solid fa-building", label: "Organisations" },
+        ],
+    },
+    {
+        title: "MANAGEMENT",
+        items: [
+            { href: "/index/users", icon: "fa-solid fa-users", label: "Users" },
+            { href: "/index/roles", icon: "fa-solid fa-user-shield", label: "Roles" },
+        ],
+    },
+    {
+        title: "ANALYTICS",
+        items: [
+            { href: "/index/statistics", icon: "fa-solid fa-chart-line", label: "Statistics" },
+            { href: "/index/reports", icon: "fa-solid fa-file-waveform", label: "Reports" },
+        ],
+    },
+    {
+        title: "SETTINGS",
+        items: [
+            { href: "/index/settings", icon: "fa-solid fa-gear", label: "Settings" },
+        ],
+    },
 ];
 
 export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
     // state removed to be managed by parent IndexAdmin
+    const currentPath =
+        activePath || (typeof window !== "undefined" ? window.location.pathname : "");
 
     return (
         <>
@@ -301,67 +303,75 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
 
                 {/* ── Nav ── */}
                 <nav className="flex-1 pt-4 overflow-y-auto overflow-x-hidden">
-                    <AnimatePresence>
-                        {!collapsed && (
-                            <motion.p
-                                className="sb-section mb-3"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                Main Menu
-                            </motion.p>
-                        )}
-                    </AnimatePresence>
-
                     <ul className="flex flex-col">
-                        {navItems.map((item) => {
-                            const isActive = activePath === item.href;
-                            return (
-                                <li key={item.href}>
-                                    <Link
-                                        to={item.href}
-                                        className={`sb-item ${isActive ? "active" : ""}`}
-                                        title={collapsed ? item.label : ""}
-                                        onClick={() => {
-                                            // Close sidebar on mobile after clicking a link
-                                            if (window.innerWidth < 761)
-                                                setCollapsed(true);
-                                        }}
-                                    >
-                                        <i className={item.icon}></i>
-                                        <AnimatePresence>
-                                            {!collapsed && (
-                                                <motion.span
-                                                    initial={{
-                                                        opacity: 0,
-                                                        width: 0,
-                                                    }}
-                                                    animate={{
-                                                        opacity: 1,
-                                                        width: "auto",
-                                                    }}
-                                                    exit={{
-                                                        opacity: 0,
-                                                        width: 0,
-                                                    }}
-                                                    transition={{
-                                                        duration: 0.2,
-                                                    }}
-                                                    style={{
-                                                        overflow: "hidden",
-                                                        display: "block",
+                        {NAV_SECTIONS.map((section) => (
+                            <li key={section.title}>
+                                <AnimatePresence>
+                                    {!collapsed && (
+                                        <motion.p
+                                            className="sb-section mb-3 mt-2"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            {section.title}
+                                        </motion.p>
+                                    )}
+                                </AnimatePresence>
+
+                                <ul className="flex flex-col">
+                                    {section.items.map((item) => {
+                                        const isActive =
+                                            currentPath === item.href ||
+                                            currentPath.startsWith(item.href + "/");
+                                        return (
+                                            <li key={item.href}>
+                                                <Link
+                                                    to={item.href}
+                                                    className={`sb-item ${isActive ? "active" : ""}`}
+                                                    title={collapsed ? item.label : ""}
+                                                    onClick={() => {
+                                                        // Close sidebar on mobile after clicking a link
+                                                        if (window.innerWidth < 761)
+                                                            setCollapsed(true);
                                                     }}
                                                 >
-                                                    {item.label}
-                                                </motion.span>
-                                            )}
-                                        </AnimatePresence>
-                                    </Link>
-                                </li>
-                            );
-                        })}
+                                                    <i className={item.icon}></i>
+                                                    <AnimatePresence>
+                                                        {!collapsed && (
+                                                            <motion.span
+                                                                initial={{
+                                                                    opacity: 0,
+                                                                    width: 0,
+                                                                }}
+                                                                animate={{
+                                                                    opacity: 1,
+                                                                    width: "auto",
+                                                                }}
+                                                                exit={{
+                                                                    opacity: 0,
+                                                                    width: 0,
+                                                                }}
+                                                                transition={{
+                                                                    duration: 0.2,
+                                                                }}
+                                                                style={{
+                                                                    overflow: "hidden",
+                                                                    display: "block",
+                                                                }}
+                                                            >
+                                                                {item.label}
+                                                            </motion.span>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </li>
+                        ))}
                     </ul>
                 </nav>
 
