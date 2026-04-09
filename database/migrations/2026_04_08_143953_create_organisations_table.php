@@ -12,18 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('organisations', function (Blueprint $table) {
-            $table->id('id_org');
+            $table->id('id_org'); // La "source" du lien
             $table->string('nom');
             $table->string('ville_org');
             $table->string('type');
-            $table->unsignedBigInteger('parent_id')->nullable();
-            $table->timestamps(); // Pour created_at
-
-            $table
-                ->foreign('parent_id')
-                ->references('id_org')
-                ->on('organisations')
-                ->nullOnDelete();
+            $table->timestamps();
         });
     }
 

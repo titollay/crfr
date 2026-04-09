@@ -18,7 +18,7 @@ return new class extends Migration
             $table->date('date_debut');
             $table->date('date_fin');
             $table->unsignedBigInteger('created_by'); // Relie à users.id_user
-            $table->string('statut');
+            $table->enum('statut', ['Confirmée', 'Annulée', 'En attente']);
             $table->timestamps();
 
             $table

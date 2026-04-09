@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\Api\ChambreController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -13,9 +14,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::apiResource('courses', CourseController::class);
     Route::apiResource('bookings', BookingController::class);
+
+    // Chambres
+    Route::get('chambres/statistics', [ChambreController::class, 'statistics']);
+    Route::apiResource('chambres', ChambreController::class)->parameters(['chambres' => 'id']);
 });

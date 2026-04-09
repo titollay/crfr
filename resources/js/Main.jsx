@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Routes, Route } from "react-router-dom";
 import Dashboard from "./Pages/admin/Dashboard";
 import Login from "./Pages/Auth/Login";
 import Register from "./Pages/Auth/Register";
 import Home from "./Home";
+
+const Chambres = lazy(() => import("./Pages/admin/Chambres"));
+
+function PageLoader() {
+    return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+            <div style={{ width: 36, height: 36, border: "3px solid #f3e8d0", borderTop: "3px solid #D97706", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
+}
 
 export default function Main() {
     const { i18n } = useTranslation();
@@ -30,6 +41,18 @@ export default function Main() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+
+                {/* Admin panel nested under /index */}
+                <Route path="/index" element={<Dashboard />}>
+                    <Route
+                        path="chambres"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <Chambres />
+                            </Suspense>
+                        }
+                    />
+                </Route>
             </Routes>
         </div>
     );

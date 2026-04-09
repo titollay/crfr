@@ -14,16 +14,14 @@ return new class extends Migration
         Schema::create('formations', function (Blueprint $table) {
             $table->id('id_forma');
             $table->string('sujet');
-            $table->string('statut')->default('planifiee');
+            $table->enum('statut', ['planifiee', 'en cours', 'terminee']);
             $table->string('categorie_cible');
 
-            // As in diagram: organisee_par (links to organisations)
-            $table->unsignedBigInteger('organisee_par')->nullable();
 
             // Kept for compatibility with current model fillable
-            $table->string('organisateur')->nullable();
+            $table->unsignedBigInteger('id_org');
 
-            $table->string('lieu');
+            $table->enum('salle', ['salle1', 'salle2', 'salle3', 'salle4', 'salle5', 'salle6']);
             $table->date('date_debut');
             $table->date('date_fin');
             $table->unsignedInteger('nbr_prevu')->default(0);
@@ -33,11 +31,7 @@ return new class extends Migration
             $table->text('observations')->nullable();
             $table->timestamps();
 
-            $table
-                ->foreign('organisee_par')
-                ->references('id_org')
-                ->on('organisations')
-                ->nullOnDelete();
+            $table->foreign('id_org')->references('id_org')->on('organisations')->onDelete('cascade');
         });
     }
 

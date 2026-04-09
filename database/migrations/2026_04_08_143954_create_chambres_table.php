@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('chambres', function (Blueprint $table) {
             $table->id('id_chambre');
-            $table->string('num_chambre');
-            $table->string('type_chambre');
-            $table->string('statut'); // Ex: Libre, Occupée
+            $table->string('num_chambre')->unique(); // Unique pour éviter deux chambres avec le même numéro
+            $table->string('type_chambre'); // Ex: Simple, Double, Suite
+            
+            // Utilisation de ENUM pour restreindre les choix
+            $table->enum('statut', ['Disponible', 'Occupée', 'Maintenance'])->default('Disponible');
+            
             $table->integer('etage');
             $table->text('equipements')->nullable();
             $table->timestamps();
