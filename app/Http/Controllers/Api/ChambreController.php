@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chambre;
+use App\Services\ChambreAnalyticsService;
 use Illuminate\Http\Request;
 
 class ChambreController extends Controller
@@ -20,9 +21,14 @@ class ChambreController extends Controller
             'num_chambre'  => 'required|string|max:20|unique:chambres,num_chambre',
             'type_chambre' => 'required|string|max:50',
             'statut'       => 'required|in:Disponible,Occupée,Maintenance',
+            'maintenance_duree' => 'nullable|required_if:statut,Maintenance|integer|min:1|max:365',
             'etage'        => 'required|integer|min:0|max:99',
             'equipements'  => 'nullable|string',
         ]);
+
+        if (($validated['statut'] ?? null) !== 'Maintenance') {
+            $validated['maintenance_duree'] = null;
+        }
 
         $chambre = Chambre::create($validated);
         return response()->json($chambre, 201);
@@ -42,9 +48,14 @@ class ChambreController extends Controller
             'num_chambre'  => 'required|string|max:20|unique:chambres,num_chambre,' . $id . ',id_chambre',
             'type_chambre' => 'required|string|max:50',
             'statut'       => 'required|in:Disponible,Occupée,Maintenance',
+            'maintenance_duree' => 'nullable|required_if:statut,Maintenance|integer|min:1|max:365',
             'etage'        => 'required|integer|min:0|max:99',
             'equipements'  => 'nullable|string',
         ]);
+
+        if (($validated['statut'] ?? null) !== 'Maintenance') {
+            $validated['maintenance_duree'] = null;
+        }
 
         $chambre->update($validated);
         return response()->json($chambre);
@@ -86,5 +97,20 @@ class ChambreController extends Controller
             'by_type'          => $byType,
             'by_floor'         => $byFloor,
         ]);
+    }
+
+    /**
+     * Analytique chambres / réservations (taux d’occupation par nuitées, top chambres, calendrier).
+     *
+     * Query: calendar_year (défaut: année courante), calendar_month 1–12 (défaut: mois courant)
+     */
+    public function analytics(Request $request, ChambreAnalyticsService $analytics)
+    {
+        $year = (int) $request->query('calendar_year', now()->year);
+        $month = (int) $request->query('calendar_month', now()->month);
+        $month = max(1, min(12, $month));
+        $year = max(1970, min(2100, $year));
+
+        return response()->json($analytics->buildDashboard($year, $month));
     }
 }

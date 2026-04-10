@@ -7,6 +7,7 @@ import Register from "./Pages/Auth/Register";
 import Home from "./Home";
 
 const Chambres = lazy(() => import("./Pages/admin/Chambres"));
+const Reservations = lazy(() => import("./Pages/admin/Reservations"));
 
 function PageLoader() {
     return (
@@ -52,8 +53,17 @@ export default function Main() {
                             </Suspense>
                         }
                     />
+                    <Route
+                        path="reservations"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <Reservations />
+                            </Suspense>
+                        }
+                    />
                 </Route>
             </Routes>
         </div>
     );
 }
+

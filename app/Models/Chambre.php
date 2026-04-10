@@ -15,6 +15,7 @@ class Chambre extends Model
         'num_chambre', 
         'type_chambre', 
         'statut', 
+        'maintenance_duree',
         'etage', 
         'equipements'
     ];

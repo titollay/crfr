@@ -22,5 +22,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Chambres
     Route::get('chambres/statistics', [ChambreController::class, 'statistics']);
+    Route::get('chambres/analytics', [ChambreController::class, 'analytics']);
     Route::apiResource('chambres', ChambreController::class)->parameters(['chambres' => 'id']);
 });
