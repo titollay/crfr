@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Routes, Route } from "react-router-dom";
 import Dashboard from "./Pages/admin/Dashboard";
 import Login from "./Pages/Auth/Login";
-import Register from "./Pages/Auth/Register";
 import Home from "./Home";
 
 const Chambres = lazy(() => import("./Pages/admin/Chambres"));
 const Reservations = lazy(() => import("./Pages/admin/Reservations"));
+const Intervenants = lazy(() => import("./Pages/admin/Intervenants"));
 
 function PageLoader() {
     return (
@@ -40,7 +40,6 @@ export default function Main() {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<Dashboard />} />
 
                 {/* Admin panel nested under /index */}
@@ -58,6 +57,14 @@ export default function Main() {
                         element={
                             <Suspense fallback={<PageLoader />}>
                                 <Reservations />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="intervenants"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <Intervenants />
                             </Suspense>
                         }
                     />

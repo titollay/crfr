@@ -13,6 +13,7 @@ class Reservation extends Model
 
     protected $fillable = [
         'id_inter', 
+        'id_inter_2',
         'id_chambre', 
         'date_debut', 
         'date_fin', 
@@ -20,10 +21,16 @@ class Reservation extends Model
         'statut'
     ];
 
-    // Relation avec l'intervenant qui réserve
+    // Relation avec l'intervenant principal qui réserve
     public function intervenant()
     {
         return $this->belongsTo(Intervenant::class, 'id_inter');
+    }
+
+    // Relation avec le deuxième intervenant
+    public function intervenant2()
+    {
+        return $this->belongsTo(Intervenant::class, 'id_inter_2');
     }
 
     // Relation avec la chambre réservée

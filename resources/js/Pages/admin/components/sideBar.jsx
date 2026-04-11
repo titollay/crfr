@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "../../../../assets/logo.png";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const NAV_SECTIONS = [
     {
@@ -46,9 +46,8 @@ const NAV_SECTIONS = [
 ];
 
 export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
-    // state removed to be managed by parent IndexAdmin
-    const currentPath =
-        activePath || (typeof window !== "undefined" ? window.location.pathname : "");
+    const location = useLocation();
+    const currentPath = activePath || location.pathname;
 
     return (
         <>
@@ -322,9 +321,8 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
 
                                 <ul className="flex flex-col">
                                     {section.items.map((item) => {
-                                        const isActive =
-                                            currentPath === item.href ||
-                                            currentPath.startsWith(item.href + "/");
+                                        const isActive = currentPath === item.href || 
+                                            (item.href !== "/index" && currentPath.startsWith(item.href + "/"));
                                         return (
                                             <li key={item.href}>
                                                 <Link

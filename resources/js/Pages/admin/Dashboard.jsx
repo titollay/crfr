@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 
 import axios from "axios";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import SideBar from "./components/sideBar";
 import TopBar from "./components/topBar";
 import AdminFooter from "./components/AdminFooter";
 
 export default function Dashboard() {
     const [user, setUser] = useState(null);
-
+    const location = useLocation();
     const navigate = useNavigate();
     const [collapsed, setCollapsed] = useState(window.innerWidth < 1024);
 
@@ -49,7 +49,7 @@ export default function Dashboard() {
 
     return (
         <div className="flex h-screen overflow-hidden ">
-            <SideBar collapsed={collapsed} setCollapsed={setCollapsed} />
+            <SideBar key={location.pathname} collapsed={collapsed} setCollapsed={setCollapsed} />
             <div className="flex flex-col flex-1 bg-[#F4F6FA] dark:bg-[#0a0a0a] min-w-0 transition-colors duration-300">
                 <TopBar
                     collapsed={collapsed}
