@@ -140,6 +140,6 @@ class IntervenantController extends Controller
 
     public function organisations()
     {
-        return response()->json(Organisation::orderBy('nom')->get());
+        return response()->json(Organisation::orderBy('nom')->get(['id_org', 'nom']));
     }
 }

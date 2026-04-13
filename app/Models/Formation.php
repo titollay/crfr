@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Formation extends Model
 {
@@ -11,9 +11,19 @@ class Formation extends Model
 
     protected $primaryKey = 'id_forma';
 
-    protected $fillable = [
-        'sujet', 'categorie_cible', 'organisateur', 'lieu', 
-        'date_debut', 'date_fin', 'nbr_prevu', 'nbr_reel', 
-        'superviseur', 'heures_formation', 'observations'
+    protected $casts = [
+        'date_debut' => 'date',
+        'date_fin' => 'date',
     ];
+
+    protected $fillable = [
+        'sujet', 'statut', 'categorie_cible', 'id_org', 'lieu',
+        'date_debut', 'date_fin', 'nbr_prevu', 'nbr_reel',
+        'superviseur', 'heures_formation', 'observations', 'salle',
+    ];
+
+    public function organisation()
+    {
+        return $this->belongsTo(Organisation::class, 'id_org', 'id_org');
+    }
 }

@@ -20,6 +20,21 @@ class Organisation extends Model
 
     public function intervenants()
     {
-        return $this->hasMany(Intervenant::class, 'id_org');
+        return $this->hasMany(Intervenant::class, 'id_org', 'id_org');
+    }
+
+    public function formations()
+    {
+        return $this->hasMany(Formation::class, 'id_org', 'id_org');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(self::class, 'parent_id', 'id_org');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(self::class, 'parent_id', 'id_org');
     }
 }

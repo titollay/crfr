@@ -8,6 +8,9 @@ import Home from "./Home";
 const Chambres = lazy(() => import("./Pages/admin/Chambres"));
 const Reservations = lazy(() => import("./Pages/admin/Reservations"));
 const Intervenants = lazy(() => import("./Pages/admin/Intervenants"));
+const FormationsPage = lazy(() => import("./Pages/admin/FormationsPage"));
+const OrganisationsPage = lazy(() => import("./Pages/admin/OrganisationsPage"));
+const Planning = lazy(() => import("./Pages/admin/Planning"));
 
 function PageLoader() {
     return (
@@ -65,6 +68,30 @@ export default function Main() {
                         element={
                             <Suspense fallback={<PageLoader />}>
                                 <Intervenants />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="formations"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <FormationsPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="organisations"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <OrganisationsPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="planning"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <Planning />
                             </Suspense>
                         }
                     />
