@@ -39,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('intervenants/organisations', [IntervenantController::class, 'organisations']);
     Route::apiResource('intervenants', IntervenantController::class)->parameters(['intervenants' => 'id']);
 
+    Route::get('formations/available-salles', [FormationController::class, 'availableSalles']);
     Route::get('formations', [FormationController::class, 'index']);
     Route::post('formations', [FormationController::class, 'store']);
     Route::put('formations/{id_forma}', [FormationController::class, 'update']);

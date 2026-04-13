@@ -426,15 +426,55 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
     const [form, setForm] = useState(() => formationFormFromInitial(initial));
     const [errors, setErrors] = useState({});
     const [focus, setFocus] = useState(null);
+    const [availableSalles, setAvailableSalles] = useState([]);
+    const [loadingSalles, setLoadingSalles] = useState(false);
+
+    const isEdit = Boolean(initial.id_forma);
 
     useEffect(() => {
         setForm(formationFormFromInitial(initial));
         setErrors({});
     }, [initial.id_forma]);
 
+    // Fetch available salles when dates change
+    useEffect(() => {
+        if (form.date_debut && form.date_fin && form.date_fin >= form.date_debut) {
+            const fetchAvailableSalles = async () => {
+                setLoadingSalles(true);
+                try {
+                    const token = localStorage.getItem("token");
+                    const params = {
+                        date_debut: form.date_debut,
+                        date_fin: form.date_fin,
+                    };
+                    if (isEdit && initial.id_forma) {
+                        params.exclude_id = initial.id_forma;
+                    }
+                    const res = await axios.get("/api/formations/available-salles", {
+                        params,
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    setAvailableSalles(res.data);
+                } catch (err) {
+                    console.error("Erreur chargement salles disponibles:", err);
+                    setAvailableSalles([]);
+                } finally {
+                    setLoadingSalles(false);
+                }
+            };
+            fetchAvailableSalles();
+        } else {
+            setAvailableSalles([]);
+        }
+    }, [form.date_debut, form.date_fin]);
+
     const set = (k, v) => {
         setForm((f) => ({ ...f, [k]: v }));
         if (errors[k]) setErrors((e) => ({ ...e, [k]: null }));
+        // Reset salle when dates change (only for new formations)
+        if ((k === "date_debut" || k === "date_fin") && !isEdit) {
+            setForm((f) => ({ ...f, [k]: v, salle: "" }));
+        }
     };
 
     const validate = () => {
@@ -485,10 +525,35 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
         boxShadow: focus === k && !errors[k] ? "0 0 0 3px rgba(217,119,6,0.15)" : "none",
     });
 
-    const isEdit = Boolean(initial.id_forma);
+    const datesReady = form.date_debut && form.date_fin && form.date_fin >= form.date_debut;
+    const salleDisabled = !datesReady || loadingSalles;
 
     return (
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* ── Dates first ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Field label="Date de début" required error={errors.date_debut}>
+                    <input
+                        type="date"
+                        style={inputStyle("date_debut")}
+                        value={form.date_debut}
+                        onChange={(e) => set("date_debut", e.target.value)}
+                        onFocus={() => setFocus("date_debut")}
+                        onBlur={() => setFocus(null)}
+                    />
+                </Field>
+                <Field label="Date de fin" required error={errors.date_fin}>
+                    <input
+                        type="date"
+                        style={inputStyle("date_fin")}
+                        value={form.date_fin}
+                        onChange={(e) => set("date_fin", e.target.value)}
+                        onFocus={() => setFocus("date_fin")}
+                        onBlur={() => setFocus(null)}
+                    />
+                </Field>
+            </div>
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <Field label="Sujet" required error={errors.sujet}>
                     <input
@@ -531,42 +596,38 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
                 </Field>
                 <Field label="Salle" required error={errors.salle}>
                     <select
-                        style={{ ...inputStyle("salle"), appearance: "none", cursor: "pointer" }}
+                        style={{
+                            ...inputStyle("salle"),
+                            appearance: "none",
+                            cursor: salleDisabled ? "not-allowed" : "pointer",
+                            opacity: salleDisabled ? 0.55 : 1,
+                        }}
                         value={form.salle}
                         onChange={(e) => set("salle", e.target.value)}
                         onFocus={() => setFocus("salle")}
                         onBlur={() => setFocus(null)}
+                        disabled={salleDisabled}
                     >
-                        <option value="">— Choisir une salle —</option>
-                        {SALLES.map((s) => (
-                            <option key={s.value} value={s.value}>
-                                {s.label}
+                        <option value="">
+                            {loadingSalles
+                                ? "Chargement des salles…"
+                                : !datesReady
+                                  ? "⏳ Sélectionnez d'abord les dates"
+                                  : availableSalles.length === 0
+                                    ? "Aucune salle disponible"
+                                    : "— Choisir une salle —"}
+                        </option>
+                        {availableSalles.map((s) => (
+                            <option key={s.id_salle} value={s.num_salle}>
+                                {s.num_salle}
                             </option>
                         ))}
                     </select>
-                </Field>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <Field label="Date de début" required error={errors.date_debut}>
-                    <input
-                        type="date"
-                        style={inputStyle("date_debut")}
-                        value={form.date_debut}
-                        onChange={(e) => set("date_debut", e.target.value)}
-                        onFocus={() => setFocus("date_debut")}
-                        onBlur={() => setFocus(null)}
-                    />
-                </Field>
-                <Field label="Date de fin" required error={errors.date_fin}>
-                    <input
-                        type="date"
-                        style={inputStyle("date_fin")}
-                        value={form.date_fin}
-                        onChange={(e) => set("date_fin", e.target.value)}
-                        onFocus={() => setFocus("date_fin")}
-                        onBlur={() => setFocus(null)}
-                    />
+                    {datesReady && !loadingSalles && availableSalles.length > 0 && (
+                        <span style={{ fontSize: "0.7rem", color: "#10b981", marginTop: 4 }}>
+                            {availableSalles.length} salle(s) disponible(s) pour ces dates
+                        </span>
+                    )}
                 </Field>
             </div>
 
@@ -1025,15 +1086,46 @@ function buildFormationTimelineSeries(formations, granularity) {
 
     const map = new Map();
     for (const f of formations) {
-        const d = parseLocal(f.date_debut);
-        if (!d) continue;
-        const { key, sort } = keyFor(d);
-        if (!map.has(key)) map.set(key, { count: 0, participants: 0, sort });
-        const row = map.get(key);
-        row.count += 1;
+        let d1 = parseLocal(f.date_debut);
+        let d2 = parseLocal(f.date_fin);
+        
+        if (!d1 && !d2) continue;
+        if (!d1) d1 = new Date(d2);
+        if (!d2) d2 = new Date(d1);
+        
+        // Ensure d1 <= d2
+        if (d1 > d2) {
+            const temp = d1;
+            d1 = d2;
+            d2 = temp;
+        }
+
+        const activeKeys = new Map();
+        const cur = new Date(d1);
+        cur.setHours(0, 0, 0, 0);
+        d2.setHours(0, 0, 0, 0);
+
+        // Iterate over all days between start and end
+        while (cur <= d2) {
+            const { key, sort } = keyFor(cur);
+            // Record this period key only once per formation
+            if (!activeKeys.has(key)) {
+                activeKeys.set(key, sort);
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+
         const nReel = Number(f.nbr_reel) || 0;
         const nPrevu = Number(f.nbr_prevu) || 0;
-        row.participants += nReel > 0 ? nReel : nPrevu;
+        const participants = nReel > 0 ? nReel : nPrevu;
+
+        // Apply formation values to all active periods
+        for (const [key, sort] of activeKeys.entries()) {
+            if (!map.has(key)) map.set(key, { count: 0, participants: 0, sort });
+            const row = map.get(key);
+            row.count += 1;
+            row.participants += participants;
+        }
     }
 
     const sorted = Array.from(map.entries()).sort((a, b) => a[1].sort - b[1].sort);
@@ -1272,6 +1364,7 @@ function FormationsPageInner() {
 
     const [formations, setFormations] = useState(/** @type {FormationRow[]} */ ([]));
     const [organisations, setOrganisations] = useState(/** @type {Organisation[]} */ ([]));
+    const [salles, setSalles] = useState(/** @type {any[]} */ ([]));
     const [loading, setLoading] = useState(true);
     const [listError, setListError] = useState(/** @type {string | null} */ (null));
     const [search, setSearch] = useState("");
@@ -1304,12 +1397,14 @@ function FormationsPageInner() {
         setLoading(true);
         setListError(null);
         try {
-            const [formRes, orgRes] = await Promise.all([
+            const [formRes, orgRes, sallesRes] = await Promise.all([
                 axios.get("/api/formations", { headers }),
                 axios.get("/api/organisations", { headers }),
+                axios.get("/api/salles", { headers }),
             ]);
             setFormations(Array.isArray(formRes.data) ? formRes.data : []);
             setOrganisations(Array.isArray(orgRes.data) ? orgRes.data : []);
+            setSalles(Array.isArray(sallesRes.data) ? sallesRes.data : []);
         } catch (err) {
             setListError(
                 err.response?.data?.message ??
@@ -2036,31 +2131,47 @@ function FormationsPageInner() {
                                     marginBottom: 24,
                                 }}
                             >
-                                <StatCard
-                                    icon="fa-solid fa-graduation-cap"
-                                    label="Formations"
-                                    value={statsData.total}
-                                    color={PRIMARY}
-                                />
-                                <StatCard
-                                    icon="fa-solid fa-door-open"
-                                    label="Salles utilisées"
-                                    value={statsData.sallesUtilisees}
-                                    color="#3b82f6"
-                                    sub={`sur ${SALLES.length} salles`}
-                                />
-                                <StatCard
-                                    icon="fa-solid fa-users"
-                                    label="Participants prévus"
-                                    value={statsData.totalPrevu}
-                                    color="#8b5cf6"
-                                />
-                                <StatCard
-                                    icon="fa-solid fa-clock"
-                                    label="Heures totales"
-                                    value={statsData.totalHeures}
-                                    color="#10b981"
-                                />
+                                {(() => {
+                                    const sallesDispo = salles.filter(s => s.statut === "Disponible").length;
+                                    const sallesOccupees = salles.filter(s => s.statut === "Occupée").length;
+
+                                    return (
+                                        <>
+                                            <StatCard
+                                                icon="fa-solid fa-graduation-cap"
+                                                label="Formations"
+                                                value={statsData.total}
+                                                color={PRIMARY}
+                                            />
+                                            <StatCard
+                                                icon="fa-regular fa-calendar-check"
+                                                label="Salles Disponibles"
+                                                value={sallesDispo}
+                                                color="#10b981"
+                                                sub={`sur ${salles.length} salles`}
+                                            />
+                                            <StatCard
+                                                icon="fa-solid fa-door-closed"
+                                                label="Salles Occupées"
+                                                value={sallesOccupees}
+                                                color="#ef4444"
+                                                sub={`sur ${salles.length} salles`}
+                                            />
+                                            <StatCard
+                                                icon="fa-solid fa-users"
+                                                label="Participants prévus"
+                                                value={statsData.totalPrevu}
+                                                color="#8b5cf6"
+                                            />
+                                            <StatCard
+                                                icon="fa-solid fa-clock"
+                                                label="Heures totales"
+                                                value={statsData.totalHeures}
+                                                color="#10b981"
+                                            />
+                                        </>
+                                    );
+                                })()}
                             </div>
 
                             <div
