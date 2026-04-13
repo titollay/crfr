@@ -5,42 +5,42 @@ import { Link, useLocation } from "react-router-dom";
 const NAV_SECTIONS = [
     {
         title: "DASHBOARD",
-        items: [{ href: "/index", icon: "fa-solid fa-gauge", label: "Dashboard" }],
+        items: [{ href: "/dashboard", icon: "fa-solid fa-gauge", label: "Dashboard" }],
     },
     {
         title: "HOTEL",
         items: [
-            { href: "/index/chambres", icon: "fa-solid fa-bed", label: "Chambres" },
-            { href: "/index/reservations", icon: "fa-solid fa-calendar-check", label: "Reservations" },
-            { href: "/index/intervenants", icon: "fa-solid fa-user-tie", label: "Intervenants" },
+            { href: "/dashboard/chambres", icon: "fa-solid fa-bed", label: "Chambres" },
+            { href: "/dashboard/reservations", icon: "fa-solid fa-calendar-check", label: "Reservations" },
+            { href: "/dashboard/intervenants", icon: "fa-solid fa-user-tie", label: "Intervenants" },
         ],
     },
     {
         title: "FORMATION",
         items: [
-            { href: "/index/formations", icon: "fa-solid fa-graduation-cap", label: "Formations" },
-            { href: "/index/planning", icon: "fa-solid fa-calendar-days", label: "Planning" },
-            { href: "/index/organisations", icon: "fa-solid fa-building", label: "Organisations" },
+            { href: "/dashboard/formations", icon: "fa-solid fa-graduation-cap", label: "Formations" },
+            { href: "/dashboard/planning", icon: "fa-solid fa-calendar-days", label: "Planning" },
+            { href: "/dashboard/organisations", icon: "fa-solid fa-building", label: "Organisations" },
         ],
     },
     {
         title: "MANAGEMENT",
         items: [
-            { href: "/index/users", icon: "fa-solid fa-users", label: "Users" },
-            { href: "/index/roles", icon: "fa-solid fa-user-shield", label: "Roles" },
+            { href: "/dashboard/users", icon: "fa-solid fa-users", label: "Users" },
+            { href: "/dashboard/roles", icon: "fa-solid fa-user-shield", label: "Roles" },
         ],
     },
     {
         title: "ANALYTICS",
         items: [
-            { href: "/index/statistics", icon: "fa-solid fa-chart-line", label: "Statistics" },
-            { href: "/index/reports", icon: "fa-solid fa-file-waveform", label: "Reports" },
+            { href: "/dashboard/statistics", icon: "fa-solid fa-chart-line", label: "Statistics" },
+            { href: "/dashboard/reports", icon: "fa-solid fa-file-waveform", label: "Reports" },
         ],
     },
     {
         title: "SETTINGS",
         items: [
-            { href: "/index/settings", icon: "fa-solid fa-gear", label: "Settings" },
+            { href: "/dashboard/settings", icon: "fa-solid fa-gear", label: "Settings" },
         ],
     },
 ];
@@ -322,7 +322,7 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
                                 <ul className="flex flex-col">
                                     {section.items.map((item) => {
                                         const isActive = currentPath === item.href || 
-                                            (item.href !== "/index" && currentPath.startsWith(item.href + "/"));
+                                            (item.href !== "/dashboard" && currentPath.startsWith(item.href + "/"));
                                         return (
                                             <li key={item.href}>
                                                 <Link

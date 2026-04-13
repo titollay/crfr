@@ -1,18 +1,47 @@
 import React, { useEffect, useState, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Dashboard from "./Pages/admin/Dashboard";
 import Login from "./Pages/Auth/Login";
 import Home from "./Home";
 
-const Chambres = lazy(() => import("./Pages/admin/Chambres"));
-const Reservations = lazy(() => import("./Pages/admin/Reservations"));
-const Intervenants = lazy(() => import("./Pages/admin/Intervenants"));
+const Chambres = lazy(
+    () => import("./Pages/admin/components/componentDash/Chambres"),
+);
+const Reservations = lazy(
+    () => import("./Pages/admin/components/componentDash/Reservations"),
+);
+const Intervenants = lazy(
+    () => import("./Pages/admin/components/componentDash/Intervenants"),
+);
+
+function LegacyIndexRedirect() {
+    const { pathname, search, hash } = useLocation();
+    const next = pathname.replace(/^\/index(\/|$)/, "/dashboard$1");
+    const to = `${next}${search}${hash}`;
+    return <Navigate to={to || "/dashboard"} replace />;
+}
 
 function PageLoader() {
     return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-            <div style={{ width: 36, height: 36, border: "3px solid #f3e8d0", borderTop: "3px solid #D97706", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "60vh",
+            }}
+        >
+            <div
+                style={{
+                    width: 36,
+                    height: 36,
+                    border: "3px solid #f3e8d0",
+                    borderTop: "3px solid #D97706",
+                    borderRadius: "50%",
+                    animation: "spin 0.7s linear infinite",
+                }}
+            />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
     );
@@ -40,10 +69,11 @@ export default function Main() {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/dashboard" element={<Dashboard />} />
 
-                {/* Admin panel nested under /index */}
-                <Route path="/index" element={<Dashboard />}>
+                <Route path="/index" element={<LegacyIndexRedirect />} />
+                <Route path="/index/*" element={<LegacyIndexRedirect />} />
+
+                <Route path="/dashboard" element={<Dashboard />}>
                     <Route
                         path="chambres"
                         element={
@@ -73,4 +103,3 @@ export default function Main() {
         </div>
     );
 }
-

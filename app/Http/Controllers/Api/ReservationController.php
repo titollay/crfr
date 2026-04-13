@@ -181,6 +181,8 @@ class ReservationController extends Controller
      */
     public function statistics()
     {
+        $today = Carbon::today();
+
         $total = Reservation::count();
         $confirmees = Reservation::where('statut', 'Confirmée')->count();
         $attente = Reservation::where('statut', 'En attente')->count();
@@ -192,30 +194,148 @@ class ReservationController extends Controller
             'confirmees' => $confirmees,
             'attente' => $attente,
             'annulees' => $annulees,
-            'taux_confirmation' => $total > 0 ? round(($confirmees / $total) * 100) : 0
+            'taux_confirmation' => $total > 0 ? round(($confirmees / $total) * 100) : 0,
         ];
 
-        // Monthly created count for area chart
+        // Monthly created count for line chart (last 12 buckets)
         $monthlyBase = Reservation::select(
+            DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month_key"),
             DB::raw("DATE_FORMAT(created_at, '%b %Y') as month"),
-            DB::raw("MIN(created_at) as raw_date"),
-            DB::raw("count(*) as total")
+            DB::raw('MIN(created_at) as raw_date'),
+            DB::raw('count(*) as total')
         )
-        ->groupBy('month')
-        ->orderBy('raw_date', 'asc')
-        ->limit(12)
-        ->get();
+            ->groupBy('month_key', 'month')
+            ->orderBy('raw_date', 'asc')
+            ->limit(12)
+            ->get();
 
-        $monthlyData = $monthlyBase->map(function ($item) {
-            return [
-                'month' => $item->month,
-                'total' => $item->total
+        $monthlyData = $monthlyBase->map(fn ($item) => [
+            'month' => $item->month,
+            'month_key' => $item->month_key,
+            'total' => (int) $item->total,
+        ]);
+
+        // Daily: reservations created per day (last 60 days, zeros filled)
+        $dailyStart = $today->copy()->subDays(59)->startOfDay();
+        $rawDaily = Reservation::query()
+            ->where('created_at', '>=', $dailyStart)
+            ->select(DB::raw('DATE(created_at) as d'), DB::raw('count(*) as total'))
+            ->groupBy('d')
+            ->pluck('total', 'd');
+
+        $dailyCreated = [];
+        for ($i = 0; $i < 60; $i++) {
+            $d = $dailyStart->copy()->addDays($i)->toDateString();
+            $dailyCreated[] = [
+                'date' => $d,
+                'total' => (int) ($rawDaily[$d] ?? 0),
             ];
-        });
+        }
+
+        // Top chambres
+        $byRoom = Reservation::query()
+            ->join('chambres', 'chambres.id_chambre', '=', 'reservations.id_chambre')
+            ->select('reservations.id_chambre', 'chambres.num_chambre', DB::raw('count(*) as total'))
+            ->groupBy('reservations.id_chambre', 'chambres.num_chambre')
+            ->orderByDesc('total')
+            ->limit(12)
+            ->get()
+            ->map(fn ($row) => [
+                'id_chambre' => $row->id_chambre,
+                'num_chambre' => $row->num_chambre,
+                'total' => (int) $row->total,
+            ]);
+
+        // Occupancy heatmap: overlapping active bookings per day (90 days)
+        $heatStart = $today->copy()->subDays(89);
+        $heatEnd = $today->copy();
+
+        $dayCounts = [];
+        for ($i = 0; $i < 90; $i++) {
+            $d = $heatStart->copy()->addDays($i)->toDateString();
+            $dayCounts[$d] = 0;
+        }
+
+        $overlapRes = Reservation::query()
+            ->whereIn('statut', ['Confirmée', 'En attente'])
+            ->where('date_fin', '>=', $heatStart->toDateString())
+            ->where('date_debut', '<=', $heatEnd->toDateString())
+            ->get(['date_debut', 'date_fin']);
+
+        foreach ($overlapRes as $r) {
+            $from = Carbon::parse($r->date_debut)->max($heatStart);
+            $to = Carbon::parse($r->date_fin)->min($heatEnd);
+            if ($from->gt($to)) {
+                continue;
+            }
+            for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+                $key = $d->toDateString();
+                if (array_key_exists($key, $dayCounts)) {
+                    $dayCounts[$key]++;
+                }
+            }
+        }
+
+        $occupancyByDay = collect($dayCounts)->map(fn ($count, $date) => [
+            'date' => $date,
+            'count' => $count,
+        ])->values()->all();
+
+        // Average stay (confirmed reservations only, nights inclusive)
+        $avgStay = Reservation::query()
+            ->where('statut', 'Confirmée')
+            ->whereRaw('DATEDIFF(date_fin, date_debut) >= 0')
+            ->selectRaw('ROUND(AVG(DATEDIFF(date_fin, date_debut) + 1), 1) as v')
+            ->value('v');
+
+        // Top créateurs (employés)
+        $byCreator = Reservation::query()
+            ->join('users', 'users.id_user', '=', 'reservations.created_by')
+            ->select('users.id_user', 'users.nom', 'users.prenom', DB::raw('count(*) as total'))
+            ->groupBy('users.id_user', 'users.nom', 'users.prenom')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get()
+            ->map(fn ($row) => [
+                'id_user' => $row->id_user,
+                'nom' => $row->nom,
+                'prenom' => $row->prenom,
+                'total' => (int) $row->total,
+            ]);
+
+        $single = Reservation::whereNull('id_inter_2')->count();
+        $double = Reservation::whereNotNull('id_inter_2')->count();
+
+        $todayStr = $today->toDateString();
+        $activeReservations = Reservation::whereIn('statut', ['Confirmée', 'En attente'])
+            ->where('date_fin', '>=', $todayStr)
+            ->count();
+        $pastReservations = Reservation::query()
+            ->where(function ($q) use ($todayStr) {
+                $q->where('statut', 'Annulée')
+                    ->orWhere(function ($q2) use ($todayStr) {
+                        $q2->whereIn('statut', ['Confirmée', 'En attente'])
+                            ->where('date_fin', '<', $todayStr);
+                    });
+            })
+            ->count();
 
         return response()->json([
             'kpi' => $kpi,
             'monthly' => $monthlyData,
+            'daily_created' => $dailyCreated,
+            'by_room' => $byRoom,
+            'occupancy_by_day' => $occupancyByDay,
+            'avg_stay_days' => $avgStay !== null ? (float) $avgStay : 0.0,
+            'by_creator' => $byCreator,
+            'single_vs_double' => [
+                'single' => $single,
+                'double' => $double,
+            ],
+            'active_vs_past' => [
+                'active' => $activeReservations,
+                'past' => $pastReservations,
+            ],
         ]);
     }
 }
