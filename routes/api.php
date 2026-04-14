@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\ChambreController;
 use App\Http\Controllers\Api\IntervenantController;
@@ -16,6 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
 
     // Reservations
     Route::get('reservations/options', [ReservationController::class, 'options']);

@@ -120,11 +120,24 @@ class IntervenantController extends Controller
             ->limit(6)
             ->get();
 
+        // Daily registrations (last 30 days)
+        $daily = Intervenant::selectRaw("DATE(created_at) as date, count(*) as total")
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
         // Monthly registrations (last 12 months)
         $monthly = Intervenant::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, count(*) as total")
+            ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
             ->orderBy('month')
-            ->limit(12)
+            ->get();
+
+        // Yearly registrations
+        $yearly = Intervenant::selectRaw("YEAR(created_at) as year, count(*) as total")
+            ->groupBy('year')
+            ->orderBy('year')
             ->get();
 
         return response()->json([
@@ -134,7 +147,9 @@ class IntervenantController extends Controller
             'by_cadre'       => $byCadre,
             'by_org'         => $byOrg,
             'by_mission'     => $byMission,
+            'daily'          => $daily,
             'monthly'        => $monthly,
+            'yearly'         => $yearly,
         ]);
     }
 

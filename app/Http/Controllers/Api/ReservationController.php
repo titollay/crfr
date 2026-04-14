@@ -199,14 +199,13 @@ class ReservationController extends Controller
 
         // Monthly created count for line chart (last 12 buckets)
         $monthlyBase = Reservation::select(
-            DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month_key"),
-            DB::raw("DATE_FORMAT(created_at, '%b %Y') as month"),
-            DB::raw('MIN(created_at) as raw_date'),
+            DB::raw("DATE_FORMAT(date_debut, '%Y-%m') as month_key"),
+            DB::raw("DATE_FORMAT(date_debut, '%b %Y') as month"),
+            DB::raw('MIN(date_debut) as raw_date'),
             DB::raw('count(*) as total')
         )
             ->groupBy('month_key', 'month')
             ->orderBy('raw_date', 'asc')
-            ->limit(12)
             ->get();
 
         $monthlyData = $monthlyBase->map(fn ($item) => [
@@ -218,8 +217,8 @@ class ReservationController extends Controller
         // Daily: reservations created per day (last 60 days, zeros filled)
         $dailyStart = $today->copy()->subDays(59)->startOfDay();
         $rawDaily = Reservation::query()
-            ->where('created_at', '>=', $dailyStart)
-            ->select(DB::raw('DATE(created_at) as d'), DB::raw('count(*) as total'))
+            ->where('date_debut', '>=', $dailyStart->toDateString())
+            ->select(DB::raw('DATE(date_debut) as d'), DB::raw('count(*) as total'))
             ->groupBy('d')
             ->pluck('total', 'd');
 

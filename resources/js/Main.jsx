@@ -74,6 +74,7 @@ export default function Main() {
                 <Route path="/index/*" element={<LegacyIndexRedirect />} />
 
                 <Route path="/dashboard" element={<Dashboard />}>
+                    <Route index element={<Navigate to="chambres" replace />} />
                     <Route
                         path="chambres"
                         element={

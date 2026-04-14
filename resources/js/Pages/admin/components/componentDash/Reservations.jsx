@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useId, useRef, createContext, useContext } from "react";
 import axios from "axios";
+import Select from "react-select";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -22,6 +23,7 @@ import {
     Cell,
 } from "recharts";
 import { Link } from "react-router-dom";
+import ReactApexChart from "react-apexcharts";
 
 const RES_CHART_PRIMARY = "#D97706";
 const RES_CHART_SUCCESS = "#10b981";
@@ -196,32 +198,80 @@ function ReservationForm({ initial = {}, onSubmit, loading, options = {}, onChec
     const STATUTS = ["En attente", "Confirmée", "Annulée"];
     const chambresDispo = availableChambres.length > 0 ? availableChambres : options.chambres || [];
 
+    const selectStyles = (k) => ({
+        control: (base, state) => ({
+            ...base,
+            border: `1px solid ${errors[k] ? "#ef4444" : state.isFocused ? PRIMARY : t.borderMd}`,
+            borderRadius: 7,
+            padding: "3px 4px",
+            fontSize: "0.85rem",
+            fontFamily: "'DM Sans', sans-serif",
+            boxShadow: state.isFocused && !errors[k] ? "0 0 0 3px rgba(217,119,6,0.15)" : "none",
+            backgroundColor: t.bgInput,
+            color: t.text,
+            transition: "border-color 0.2s, box-shadow 0.2s",
+            "&:hover": {
+                border: `1px solid ${errors[k] ? "#ef4444" : PRIMARY}`
+            }
+        }),
+        menu: (base) => ({
+            ...base,
+            backgroundColor: t.bgInput,
+            color: t.text,
+            zIndex: 50
+        }),
+        option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isFocused ? t.dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" : "transparent",
+            color: t.text,
+            "&:active": {
+                backgroundColor: PRIMARY + "33"
+            }
+        }),
+        singleValue: (base) => ({
+            ...base,
+            color: t.text,
+        }),
+        input: (base) => ({
+            ...base,
+            color: t.text,
+        })
+    });
+
+    const intervenantOptions = (options.intervenants || []).map(inv => ({
+        value: inv.id_inter,
+        label: `${inv.prenom} ${inv.nom} (${inv.cin})`
+    }));
+
+    const secondIntervenantOptions = (options.intervenants || [])
+        .filter(i => i.id_inter != form.id_inter)
+        .map(inv => ({
+            value: inv.id_inter,
+            label: `${inv.prenom} ${inv.nom}`
+        }));
+
     return (
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <Field label="Intervenant principal" required error={errors.id_inter}>
-                    <select
-                        style={{ ...inputStyle("id_inter"), appearance: "none" }}
-                        value={form.id_inter}
-                        onChange={(e) => set("id_inter", e.target.value)}
-                    >
-                        <option value="">— Sélectionner un intervenant —</option>
-                        {(options.intervenants || []).map((inv) => (
-                            <option key={inv.id_inter} value={inv.id_inter}>{inv.prenom} {inv.nom} ({inv.cin})</option>
-                        ))}
-                    </select>
+                    <Select
+                        styles={selectStyles("id_inter")}
+                        value={intervenantOptions.find(o => o.value == form.id_inter) || null}
+                        onChange={(option) => set("id_inter", option ? option.value : "")}
+                        options={intervenantOptions}
+                        placeholder="— Sélectionner un intervenant —"
+                        isClearable
+                    />
                 </Field>
                 <Field label="Deuxième intervenant (optionnel)">
-                    <select
-                        style={{ ...inputStyle("id_inter_2"), appearance: "none" }}
-                        value={form.id_inter_2}
-                        onChange={(e) => set("id_inter_2", e.target.value)}
-                    >
-                        <option value="">— Sélectionner —</option>
-                        {(options.intervenants || []).filter(i => i.id_inter != form.id_inter).map((inv) => (
-                            <option key={inv.id_inter} value={inv.id_inter}>{inv.prenom} {inv.nom}</option>
-                        ))}
-                    </select>
+                    <Select
+                        styles={selectStyles("id_inter_2")}
+                        value={secondIntervenantOptions.find(o => o.value == form.id_inter_2) || null}
+                        onChange={(option) => set("id_inter_2", option ? option.value : "")}
+                        options={secondIntervenantOptions}
+                        placeholder="— Sélectionner —"
+                        isClearable
+                    />
                 </Field>
             </div>
 
@@ -519,8 +569,10 @@ function ReservationsInner() {
     const [editTarget, setEditTarget] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
-
+    const [searchRes, setSearchRes] = useState("");
+    const [page, setPage] = useState(1);
     const showToast = (msg, type = "success") => setToast({ msg, type });
+    const btnAction = (c) => ({ border: "solid 1px ", background: "transparent", color: c, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5});
 
     const fetchData = async () => {
         setLoading(true);
@@ -591,12 +643,28 @@ function ReservationsInner() {
         }
     };
 
+    const filteredReservations = reservations.filter(res => {
+        const s = searchRes.toLowerCase();
+        return (
+            (res.intervenant?.prenom || "").toLowerCase().includes(s) ||
+            (res.intervenant?.nom || "").toLowerCase().includes(s) ||
+            (res.intervenant?.cin || "").toLowerCase().includes(s) ||
+            (res.chambre?.num_chambre || "").toString().toLowerCase().includes(s)
+        );
+    });
+
+    useEffect(() => { setPage(1); }, [searchRes]);
+
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+    const paginatedReservations = filteredReservations.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
     return (
         <div style={{ minHeight: "100vh", background: t.bgPage, fontFamily: "'DM Sans', sans-serif" }}>
-            <div style={{ background: t.bg, borderBottom: `1px solid ${t.border}`, padding: "20px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+            <div style={{ borderBottom: `1px solid ${t.border}`, padding: "20px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
                 <div style={{ flex: 1 }}>
                     <h1 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: t.text, display: "flex", alignItems: "center", gap: 10 }}>
-                        <i className="fa-solid fa-calendar-days" style={{ color: PRIMARY }} /> Réservations
+                        <i className="fa-solid fa-calendar-check" style={{ color: PRIMARY }} /> Réservations
                     </h1>
                 </div>
 
@@ -623,6 +691,33 @@ function ReservationsInner() {
             <div style={{ padding: "24px 28px" }}>
                 {activeTab === "liste" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+                        <div className="flex justify-between items-center">
+                            <div
+                                style={{
+                                    display: "flex", alignItems: "center", gap: 5,
+                                    background: t.bgInput, border: `1px solid ${searchRes ? PRIMARY : t.borderMd}`,
+                                    borderRadius: 8, padding: "2px 6px", width: 240,
+                                    boxShadow: searchRes ? "0 0 0 3px rgba(217,119,6,0.12)" : "none",
+                                    transition: "all 0.25s",
+                                }}
+                            >
+                                <i className="fa-solid fa-magnifying-glass" style={{ color: searchRes ? PRIMARY : t.textMuted, fontSize: 11 }} />
+                                <input
+                                    value={searchRes}
+                                    onChange={(e) => setSearchRes(e.target.value)}
+                                    placeholder="Rechercher (Nom, CIN, Ch...)"
+                                    style={{
+                                        border: "none", background: "transparent", outline: "none",
+                                        color: t.text, fontSize: "0.82rem", width: "100%", padding: "6px 4px",
+                                    }}
+                                />
+                                {searchRes && (
+                                    <button onClick={() => setSearchRes("")} style={{ border: "none", background: "transparent", color: t.textMuted, cursor: "pointer", padding: "0 4px" }}>
+                                        <i className="fa-solid fa-xmark" style={{ fontSize: 12 }} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                         {loading ? (
                             <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
                                 <div style={{ width: 36, height: 36, border: `3px solid ${t.border}`, borderTop: `3px solid ${PRIMARY}`, borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
@@ -642,7 +737,7 @@ function ReservationsInner() {
                                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                         <thead>
                                             <tr>
-                                                {["Intervenant", "Chambre", "Dates", "Statut", "Créé par", ""].map((h, i) => (
+                                                {["Intervenant", "Chambre", "Dates", "Statut", "Créé par", "Actions"].map((h, i) => (
                                                     <th key={i} style={{
                                                         padding: "11px 14px", textAlign: "left", fontSize: "0.68rem", textTransform: "uppercase",
                                                         letterSpacing: "0.12em", fontWeight: 700, color: t.textMuted,
@@ -653,7 +748,7 @@ function ReservationsInner() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {reservations.map((res, idx) => {
+                                            {paginatedReservations.map((res, idx) => {
                                                 const sc = STATUT_COLORS[res.statut] || { color: "#6b7280", bg: "rgba(0,0,0,0.05)" };
                                                 const rowBg = idx % 2 === 0 ? t.bg : (t.dark ? "rgba(255,255,255,0.02)" : "#fcfcfd");
                                                 return (
@@ -669,20 +764,12 @@ function ReservationsInner() {
                                                         <td style={{ padding: "11px 14px", borderBottom: `1px solid ${t.borderSm}`, verticalAlign: "middle" }}><Chip label={res.statut} color={sc.color} /></td>
                                                         <td style={{ padding: "11px 14px", fontSize: "0.82rem", color: t.textMuted, borderBottom: `1px solid ${t.borderSm}`, verticalAlign: "middle" }}>{res.createur?.prenom} {res.createur?.nom || "—"}</td>
                                                         <td style={{ padding: "11px 14px", borderBottom: `1px solid ${t.borderSm}`, verticalAlign: "middle", textAlign: "right" }}>
-                                                            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                                                <button onClick={() => { setEditTarget(res); setModal("edit"); }} 
-                                                                    onMouseEnter={(e) => { e.currentTarget.style.color = PRIMARY; e.currentTarget.style.borderColor = PRIMARY; e.currentTarget.style.background = `${PRIMARY}12`; }}
-                                                                    onMouseLeave={(e) => { e.currentTarget.style.color = t.textMuted; e.currentTarget.style.borderColor = t.border; e.currentTarget.style.background = "transparent"; }}
-                                                                    style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${t.border}`, background: "transparent", cursor: "pointer", color: t.textMuted, transition: "all 0.2s" }}>
+                                                                <button onClick={() => { setEditTarget(res); setModal("edit"); }} style={btnAction(PRIMARY)}>
                                                                     <i className="fa-solid fa-pen" />
                                                                 </button>
-                                                                <button onClick={() => setDeleteTarget(res)} 
-                                                                    onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#ef4444"; e.currentTarget.style.background = "rgba(239,68,68,0.08)"; }}
-                                                                    onMouseLeave={(e) => { e.currentTarget.style.color = t.textMuted; e.currentTarget.style.borderColor = t.border; e.currentTarget.style.background = "transparent"; }}
-                                                                    style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${t.border}`, background: "transparent", cursor: "pointer", color: t.textMuted, transition: "all 0.2s" }}>
+                                                                <button onClick={() => setDeleteTarget(res)} style={btnAction("#ef4444")}>
                                                                     <i className="fa-solid fa-trash" />
                                                                 </button>
-                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );
@@ -690,13 +777,25 @@ function ReservationsInner() {
                                         </tbody>
                                     </table>
                                 </div>
+                                {/* Pagination Controls */}
+                                {!loading && filteredReservations.length > 0 && (
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${t.borderSm}`, background: t.dark ? "rgba(255,255,255,0.01)" : "#f9fafb" }}>
+                                        <span style={{ fontSize: "0.75rem", color: t.textMuted }}>
+                                            Affichage de {(page - 1) * itemsPerPage + 1} à {Math.min(page * itemsPerPage, filteredReservations.length)} sur {filteredReservations.length} résultats
+                                        </span>
+                                        <div style={{ display: "flex", gap: 8 }}>
+                                            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === 1 ? "transparent" : t.bgInput, color: page === 1 ? t.textFaint : t.text, cursor: page === 1 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-left" /></button>
+                                            <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => p + 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === totalPages || totalPages === 0 ? "transparent" : t.bgInput, color: page === totalPages || totalPages === 0 ? t.textFaint : t.text, cursor: page === totalPages || totalPages === 0 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-right" /></button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {!loading && reservations.length > 0 && (
                             <div style={{ marginTop: 8 }}>
                                 <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                                    <div style={{ width: 12, height: 12, borderRadius: 3, background: PRIMARY }} />
+                                    <i className="fa-solid fa-calendar-days" style={{ color: PRIMARY }} />
                                     <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: t.text }}>Calendrier des réservations</h3>
                                 </div>
                                 <ReservationsCalendar
@@ -858,14 +957,60 @@ function ReservationsAnalyticsSection({ stats, theme }) {
         boxShadow: dark ? "0 8px 32px rgba(0,0,0,0.2)" : "0 8px 24px rgba(0,0,0,0.04)",
     };
 
-    const timeSeries = useMemo(() => {
+    const chartData = useMemo(() => {
+        let categories = [];
+        let data = [];
         if (timeMode === "day") {
-            return daily_created.map((d) => {
-                const [, m, day] = d.date.split("-");
-                return { period: `${day}/${m}`, total: d.total };
+            categories = daily_created.map(d => {
+                if (!d.date) return "N/A";
+                const parts = d.date.split("-");
+                return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : d.date;
             });
+            data = daily_created.map(d => d.total || 0);
+        } else if (timeMode === "year") {
+            const allYears = monthly.map(m => {
+                const val = m.month_key || m.month || "";
+                return parseInt(val.split("-")[0], 10) || parseInt(val.split(" ")[1], 10);
+            }).filter(y => !isNaN(y));
+
+            if (allYears.length > 0) {
+                const minYear = Math.min(...allYears);
+                const maxYear = Math.max(...allYears);
+
+                for (let y = minYear; y <= maxYear; y++) {
+                    const yearTotal = monthly.reduce((sum, m) => {
+                        const val = m.month_key || m.month || "";
+                        const mYear = parseInt(val.split("-")[0], 10) || parseInt(val.split(" ")[1], 10);
+                        return mYear === y ? sum + (Number(m.total) || Number(m.count) || 0) : sum;
+                    }, 0);
+                    
+                    categories.push(y.toString());
+                    data.push(yearTotal);
+                }
+            }
+        } else {
+            const currentYear = new Date().getFullYear();
+            const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+            
+            for (let i = 1; i <= 12; i++) {
+                const mm = i.toString().padStart(2, "0");
+                const targetMatch = `${currentYear}-${mm}`;
+                
+               
+                const matches = monthly.filter(m => {
+                    const dateVal = m.month_key || m.month || m.date; 
+                    return dateVal && String(dateVal).startsWith(targetMatch);
+                });
+
+                const monthlyTotal = matches.reduce((sum, m) => {
+                    return sum + (Number(m.total) || Number(m.count) || 0);
+                }, 0);
+                
+                categories.push([monthNames[i - 1], currentYear.toString()]);
+                data.push(monthlyTotal);
+            }
         }
-        return monthly.map((s) => ({ period: s.month, total: s.total }));
+        return { categories, data };
     }, [timeMode, daily_created, monthly]);
 
     const statusPie = useMemo(
@@ -963,12 +1108,13 @@ function ReservationsAnalyticsSection({ stats, theme }) {
             <SectionCard
                 theme={theme}
                 title="Réservations dans le temps"
-                hint="Courbe + aire en dégradé (créations par jour ou par mois). Repère tendance et pics."
+                hint="Évolution des réservations par jour, mois ou année."
             >
                 <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
                     {[
-                        { id: "day", label: "Par jour (60 j.)" },
-                        { id: "month", label: "Par mois (12 m.)" },
+                        { id: "day", label: "Par jour" },
+                        { id: "month", label: "Par mois" },
+                        { id: "year", label: "Par an" },
                     ].map((b) => (
                         <button
                             key={b.id}
@@ -990,246 +1136,157 @@ function ReservationsAnalyticsSection({ stats, theme }) {
                         </button>
                     ))}
                 </div>
-                <div style={{ width: "100%", height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={timeSeries} margin={{ top: 10, right: 12, left: 0, bottom: timeMode === "day" ? 8 : 0 }}>
-                            <defs>
-                                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={PRIMARY} stopOpacity={0.35} />
-                                    <stop offset="95%" stopColor={PRIMARY} stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={surface.grid} vertical={false} />
-                            <XAxis
-                                dataKey="period"
-                                tick={{ fill: textFaint, fontSize: 11 }}
-                                tickLine={false}
-                                axisLine={{ stroke: surface.grid }}
-                                interval="preserveStartEnd"
-                                angle={timeMode === "day" ? -32 : 0}
-                                textAnchor={timeMode === "day" ? "end" : "middle"}
-                                height={timeMode === "day" ? 48 : 28}
-                            />
-                            <YAxis tick={{ fill: textFaint, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} width={36} />
-                            <RechartsTooltip {...tooltipProps} />
-                            <Area
-                                type="monotone"
-                                dataKey="total"
-                                name="Réservations créées"
-                                stroke={PRIMARY}
-                                strokeWidth={2}
-                                fillOpacity={1}
-                                fill={`url(#${gradId})`}
-                                activeDot={{ r: 5, strokeWidth: 0 }}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <div style={{ width: "100%", height: 350 }}>
+                    <ReactApexChart 
+                        options={{
+                            chart: {
+                                height: 350,
+                                type: 'line',
+                                zoom: { enabled: false },
+                                background: 'transparent'
+                            },
+                            dataLabels: {
+                                enabled: false
+                            },
+                            stroke: {
+                                curve: 'smooth',
+                                colors: [PRIMARY]
+                            },
+                            title: {
+                                text: 'Tendance des Réservations',
+                                align: 'left',
+                                style: { color: text, fontFamily: "'DM Sans', sans-serif" }
+                            },
+                            grid: {
+                                row: {
+                                    colors: [dark ? 'rgba(255,255,255,0.02)' : '#f3f3f3', 'transparent'],
+                                    opacity: 0.5
+                                },
+                                borderColor: border
+                            },
+                            xaxis: {
+                                categories: chartData.categories,
+                                labels: { style: { colors: textSub, fontFamily: "'DM Sans', sans-serif" } }
+                            },
+                            yaxis: {
+                                labels: { style: { colors: textSub, fontFamily: "'DM Sans', sans-serif" } }
+                            },
+                            theme: { mode: dark ? 'dark' : 'light' }
+                        }} 
+                        series={[{ name: "Réservations", data: chartData.data }]} 
+                        type="line" 
+                        height={350} 
+                    />
                 </div>
             </SectionCard>
 
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
                     gap: 24,
                     marginTop: 24,
                 }}
             >
-                <SectionCard theme={theme} title="Répartition par statut" hint="Donut type exemple PieChart (innerRadius), légende en bas.">
-                    <div style={{ position: "relative", width: "100%", height: 280 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={statusPie}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="48%"
-                                    innerRadius={72}
-                                    outerRadius={100}
-                                    paddingAngle={2}
-                                    stroke={dark ? "#171717" : "#fff"}
-                                    strokeWidth={2}
-                                >
-                                    {statusPie.map((entry, i) => (
-                                        <Cell key={i} fill={entry.fill} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip {...tooltipProps} />
-                                <Legend verticalAlign="bottom" height={28} wrapperStyle={{ color: text, fontSize: 12 }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div
-                            style={{
-                                position: "absolute",
-                                left: "50%",
-                                top: "42%",
-                                transform: "translate(-50%, -50%)",
-                                textAlign: "center",
-                                pointerEvents: "none",
-                            }}
-                        >
-                            <span style={{ fontSize: "1.65rem", fontWeight: 800, color: text }}>{kpi.taux_confirmation}%</span>
-                            <div style={{ fontSize: "0.65rem", color: textSub, fontWeight: 600 }}>confirm.</div>
+                {/* 2 — Status Donut */}
+                <SectionCard theme={theme} title="Répartition par statut" hint="Répartition des réservations par état actuel.">
+                    <div style={{ width: "100%", height: 320, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <ReactApexChart 
+                            options={{
+                                chart: { type: 'donut', background: 'transparent' },
+                                labels: ["Confirmées", "En attente", "Annulées"],
+                                colors: [SUCCESS, INFO, DANGER],
+                                plotOptions: {
+                                    pie: {
+                                        startAngle: -90,
+                                        endAngle: 270,
+                                        donut: {
+                                            size: '75%',
+                                            labels: {
+                                                show: true,
+                                                total: {
+                                                    show: true,
+                                                    label: 'Confirm.',
+                                                    formatter: () => `${kpi.taux_confirmation}%`,
+                                                    color: text
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                dataLabels: { enabled: false },
+                                fill: { type: 'gradient' },
+                                legend: {
+                                    position: 'bottom',
+                                    fontFamily: "'DM Sans', sans-serif",
+                                    labels: { colors: text },
+                                    formatter: (val, opts) => val + " - " + opts.w.globals.series[opts.seriesIndex]
+                                },
+                                theme: { mode: dark ? 'dark' : 'light' },
+                                stroke: { show: false }
+                            }} 
+                            series={[kpi.confirmees, kpi.attente, kpi.annulees]} 
+                            type="donut" 
+                            width="100%"
+                        />
+                    </div>
+                </SectionCard>
+
+                {/* 3 — Stay Gauge */}
+                <SectionCard theme={theme} title="Durée moyenne de séjour" hint="Moyenne des nuitées par réservation confirmée.">
+                    <div style={{ width: "100%", height: 320, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ReactApexChart 
+                                options={{
+                                    chart: { type: 'radialBar', offsetY: -10, sparkline: { enabled: true } },
+                                    plotOptions: {
+                                        radialBar: {
+                                            startAngle: -90,
+                                            endAngle: 90,
+                                            max: 14, 
+                                            hollow: { size: '65%' },
+                                            track: { background: border, strokeWidth: '97%', margin: 5 },
+                                            dataLabels: {
+                                                name: { show: false },
+                                                value: {
+                                                    offsetY: -2,
+                                                    fontSize: '28px',
+                                                    fontWeight: 800,
+                                                    color: text,
+                                                    formatter: () => avg_stay_days
+                                                }
+                                            }
+                                        }
+                                    },
+                                    fill: {
+                                        type: 'gradient',
+                                        gradient: {
+                                            shade: 'dark',
+                                            type: 'horizontal',
+                                            gradientToColors: [RES_CHART_VIOLET],
+                                            stops: [0, 100]
+                                        }
+                                    },
+                                    stroke: { lineCap: 'round' },
+                                    theme: { mode: dark ? 'dark' : 'light' }
+                                }} 
+                                series={[avg_stay_days]} 
+                                type="radialBar" 
+                                width="100%"
+                                height="100%"
+                            />
+                        </div>
+                        <div style={{ textAlign: "center", paddingBottom: 20 }}>
+                            <p style={{ margin: 0, fontSize: "0.9rem", color: textSub, fontWeight: 600 }}>jours en moyenne</p>
                         </div>
                     </div>
                 </SectionCard>
-
-                <SectionCard theme={theme} title="Réservations par chambre" hint="Barres horizontales (layout vertical), grille légère.">
-                    <div style={{ width: "100%", height: by_room.length ? Math.max(240, by_room.length * 40) : 120 }}>
-                        {by_room.length ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart layout="vertical" data={roomRows} margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={surface.grid} horizontal={false} />
-                                    <XAxis type="number" tick={{ fill: textFaint, fontSize: 11 }} axisLine={{ stroke: surface.grid }} allowDecimals={false} />
-                                    <YAxis type="category" dataKey="room" width={76} tick={{ fill: textSub, fontSize: 11 }} axisLine={false} tickLine={false} />
-                                    <RechartsTooltip {...tooltipProps} />
-                                    <Bar dataKey="total" name="Réservations" radius={[0, 8, 8, 0]} fill={INFO} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p style={{ color: textMuted, fontSize: "0.85rem" }}>Aucune donnée.</p>
-                        )}
-                    </div>
-                </SectionCard>
             </div>
 
-            <div style={{ marginTop: 24 }}>
-                <SectionCard
-                    theme={theme}
-                    title="Occupation (heatmap + mini courbe)"
-                    hint="Grille 90 j. + courbe charge (area fine) pour repérer les pics."
-                >
-                    {occupancy_by_day.length ? (
-                        <>
-                            <OccupancyHeatmap days={occupancy_by_day} theme={theme} />
-                            <div style={{ width: "100%", height: 140, marginTop: 20 }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={occupancyTrend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke={surface.grid} vertical={false} />
-                                        <XAxis dataKey="period" hide />
-                                        <YAxis tick={{ fill: textFaint, fontSize: 10 }} width={28} allowDecimals={false} />
-                                        <RechartsTooltip
-                                            {...tooltipProps}
-                                            formatter={(v) => [v, "Réservations actives"]}
-                                            labelFormatter={(_, p) => (p?.length && p[0]?.payload?.fullDate) || ""}
-                                        />
-                                        <Area type="monotone" dataKey="load" stroke={PRIMARY} fill={PRIMARY} fillOpacity={0.12} strokeWidth={1.5} name="Charge" />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </>
-                    ) : (
-                        <p style={{ color: textSub, fontSize: "0.85rem" }}>Aucune donnée.</p>
-                    )}
-                </SectionCard>
-            </div>
+           
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
-                    gap: 24,
-                    marginTop: 24,
-                }}
-            >
-                <SectionCard theme={theme} title="Durée moyenne de séjour" hint="KPI + mini bar Recharts (style tiny bar).">
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "2.5rem", fontWeight: 800, color: PRIMARY }}>{avg_stay_days}</span>
-                        <span style={{ fontSize: "0.95rem", color: textSub, fontWeight: 600 }}>jours en moyenne</span>
-                    </div>
-                    <div style={{ width: "100%", height: 56, marginTop: 12 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={[{ label: "Séjour", jours: Math.min(14, avg_stay_days || 0) }]} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-                                <XAxis type="category" dataKey="label" tick={{ fill: textFaint, fontSize: 10 }} axisLine={false} tickLine={false} />
-                                <YAxis domain={[0, 14]} tick={{ fill: textFaint, fontSize: 10 }} width={28} />
-                                <Bar dataKey="jours" fill={PRIMARY} radius={[6, 6, 0, 0]} name="Jours (ref. max 14)" maxBarSize={48} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </SectionCard>
 
-                <SectionCard theme={theme} title="Réservations par utilisateur" hint="BarChart horizontal — top créateurs (created_by).">
-                    <div style={{ width: "100%", height: by_creator.length ? Math.max(240, by_creator.length * 44) : 120 }}>
-                        {by_creator.length ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart layout="vertical" data={creatorRows} margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={surface.grid} horizontal={false} />
-                                    <XAxis type="number" tick={{ fill: textFaint, fontSize: 11 }} axisLine={{ stroke: surface.grid }} allowDecimals={false} />
-                                    <YAxis type="category" dataKey="name" width={100} tick={{ fill: textSub, fontSize: 10 }} axisLine={false} tickLine={false} />
-                                    <RechartsTooltip {...tooltipProps} />
-                                    <Bar dataKey="total" name="Créations" radius={[0, 8, 8, 0]} fill={VIOLET} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p style={{ color: textSub, fontSize: "0.85rem" }}>Aucune donnée.</p>
-                        )}
-                    </div>
-                </SectionCard>
-            </div>
-
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
-                    gap: 24,
-                    marginTop: 24,
-                }}
-            >
-                <SectionCard theme={theme} title="Simple vs double" hint="Pie / donut — id_inter_2 renseigné ou non.">
-                    <div style={{ width: "100%", height: 260 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={singleDoublePie}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={58}
-                                    outerRadius={88}
-                                    paddingAngle={3}
-                                    stroke={dark ? "#171717" : "#fff"}
-                                    strokeWidth={2}
-                                >
-                                    {singleDoublePie.map((e, i) => (
-                                        <Cell key={i} fill={e.fill} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip {...tooltipProps} />
-                                <Legend wrapperStyle={{ color: text, fontSize: 12 }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </SectionCard>
-
-                <SectionCard theme={theme} title="Actives vs passées" hint="Donut — réservations encore « vivantes » vs historique.">
-                    <div style={{ width: "100%", height: 260 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={activePastPie}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={58}
-                                    outerRadius={88}
-                                    paddingAngle={3}
-                                    stroke={dark ? "#171717" : "#fff"}
-                                    strokeWidth={2}
-                                >
-                                    {activePastPie.map((e, i) => (
-                                        <Cell key={i} fill={e.fill} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip {...tooltipProps} />
-                                <Legend wrapperStyle={{ color: text, fontSize: 12 }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </SectionCard>
-            </div>
+           
 
             <style>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }`}</style>
         </div>

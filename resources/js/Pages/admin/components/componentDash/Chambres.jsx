@@ -134,6 +134,84 @@ const STATUT_PILLS = {
 
 /* ─────────────────── Components ─────────────────── */
 
+function StatCard({ icon, label, value, color, sub }) {
+    const t = useTheme();
+    return (
+        <div
+            style={{
+                background: t.bg,
+                borderRadius: 12,
+                padding: "18px 20px",
+                border: `1px solid ${t.border}`,
+                boxShadow: t.shadow,
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = t.shadowLg;
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = t.shadow;
+            }}
+        >
+            <div
+                style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    background: `${color}18`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                }}
+            >
+                <i className={icon} style={{ color, fontSize: 20 }} />
+            </div>
+            <div>
+                <div
+                    style={{
+                        fontSize: "0.72rem",
+                        color: t.textMuted,
+                        fontWeight: 600,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                    }}
+                >
+                    {label}
+                </div>
+                <div
+                    style={{
+                        fontSize: "1.6rem",
+                        fontWeight: 800,
+                        color: t.text,
+                        lineHeight: 1.2,
+                    }}
+                >
+                    {value}
+                </div>
+                {sub && (
+                    <div
+                        style={{
+                            fontSize: "0.7rem",
+                            color: t.textMuted,
+                            marginTop: 2,
+                        }}
+                    >
+                        {sub}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/* ─────────────────── Charts & Graphics ─────────────────── */
+
 function ChambresStatusDoughnut({ stats }) {
     const data = useMemo(
         () => ({
@@ -604,6 +682,7 @@ function ChambresInner() {
     const [toast, setToast] = useState(null);
     const [sortKey, setSortKey] = useState("num_chambre");
     const [sortDir, setSortDir] = useState("asc");
+    const [page, setPage] = useState(1);
 
     const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
@@ -671,6 +750,12 @@ function ChambresInner() {
         });
     }, [chambres, search, filterStatut, sortKey, sortDir]);
 
+    useEffect(() => { setPage(1); }, [search, filterStatut, sortKey, sortDir]);
+
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
     const maintenanceRooms = chambres.filter(c => c.statut === "Maintenance").map(c => {
         const upAt = c.updated_at ? new Date(c.updated_at) : new Date();
         const diff = Math.floor((Date.now() - upAt.getTime()) / (1000*60*60*24));
@@ -685,14 +770,14 @@ function ChambresInner() {
     const cardStyle = { background: t.bg, borderRadius: 12, border: `1px solid ${t.border}`, boxShadow: t.shadow, overflow: "hidden" };
     const thBase = { padding: "12px 16px", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: t.textMuted, textTransform: "uppercase", background: t.bgAlt, borderBottom: `1px solid ${t.border}` };
     const tdBase = { padding: "12px 16px", fontSize: "0.82rem", color: t.text, borderBottom: `1px solid ${t.borderSm}` };
-    const btnAction = (c) => ({ border: "none", background: "transparent", color: c, cursor: "pointer", fontSize: 13, padding: 5 });
+    const btnAction = (c) => ({ border: "solid 1px ", background: "transparent", color: c, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5});
 
     return (
         <DM.Provider value={useDarkMode()}>
             <div style={{ padding: "28px 24px", minHeight: "100%", background: t.bgPage, fontFamily: "'DM Sans', sans-serif" }}>
                 
                 {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, paddingBottom: 24, borderBottom: `1px solid ${t.border}`, gap: 12, flexWrap: "wrap" }}>
                     <h1 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: t.text, display: "flex", alignItems: "center", gap: 8 }}>
                         <i className="fa-solid fa-bed" style={{ color: PRIMARY }} /> Chambres
                     </h1>
@@ -720,7 +805,16 @@ function ChambresInner() {
                 {/* Content */}
                 {activeTab === "stats" ? (
                     stats && (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                            {/* KPI Grid */}
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+                                <StatCard icon="fa-solid fa-hotel" label="Total Chambres" value={stats.total} color={PRIMARY} />
+                                <StatCard icon="fa-solid fa-circle-check" label="Disponibles" value={stats.disponible} color="#10b981" sub={`${Math.round((stats.disponible/stats.total)*100)}% du parc`} />
+                                <StatCard icon="fa-solid fa-circle-xmark" label="Occupées" value={stats.occupee} color="#ef4444" sub={`${Math.round((stats.occupee/stats.total)*100)}% d'occupation`} />
+                                <StatCard icon="fa-solid fa-toolbox" label="Maintenance" value={stats.maintenance} color="#f59e0b" sub={`${stats.taux_maintenance}% du parc`} />
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
                             <div style={{ ...cardStyle, padding: 20 }}>
                                 <div style={{ fontSize: "0.75rem", fontWeight: 700, color: t.textMuted, marginBottom: 15, textTransform: "uppercase" }}>Répartition</div>
                                 <div style={{ height: 200, position: "relative" }}>
@@ -743,6 +837,7 @@ function ChambresInner() {
                             <div style={{ ...cardStyle, padding: 20 }}>
                                 <div style={{ fontSize: "0.75rem", fontWeight: 700, color: t.textMuted, marginBottom: 15, textTransform: "uppercase" }}>Health Alerts</div>
                                 <HealthAlertsApexChart stats={stats} />
+                            </div>
                             </div>
                         </div>
                     )
@@ -777,7 +872,7 @@ function ChambresInner() {
                                     <tbody>
                                         {loading ? (
                                             <tr><td colSpan={6} style={{ padding: 40, textAlign: "center" }}><i className="fa-solid fa-spinner fa-spin" /></td></tr>
-                                        ) : filtered.map((c, i) => (
+                                        ) : paginated.map((c, i) => (
                                             <tr key={c.id_chambre} style={{ background: i % 2 === 0 ? t.bg : t.bgAlt2 }}>
                                                 <td style={{ ...tdBase, fontWeight: 700 }}>{c.num_chambre}</td>
                                                 <td style={tdBase}>{c.type_chambre}</td>
@@ -793,6 +888,18 @@ function ChambresInner() {
                                     </tbody>
                                 </table>
                             </div>
+                            {/* Pagination Controls */}
+                            {!loading && filtered.length > 0 && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${t.borderSm}`, background: t.bgAlt }}>
+                                    <span style={{ fontSize: "0.75rem", color: t.textMuted }}>
+                                        Affichage de {(page - 1) * itemsPerPage + 1} à {Math.min(page * itemsPerPage, filtered.length)} sur {filtered.length} résultats
+                                    </span>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                        <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === 1 ? "transparent" : t.bgInput, color: page === 1 ? t.textFaint : t.text, cursor: page === 1 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-left" /></button>
+                                        <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => p + 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === totalPages || totalPages === 0 ? "transparent" : t.bgInput, color: page === totalPages || totalPages === 0 ? t.textFaint : t.text, cursor: page === totalPages || totalPages === 0 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-right" /></button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Maintenance Table */}
