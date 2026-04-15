@@ -22,6 +22,12 @@ function LegacyIndexRedirect() {
     return <Navigate to={to || "/dashboard"} replace />;
 }
 
+
+const FormationsPage = lazy(() => import("./Pages/admin/components/componentDash/FormationsPage"));
+const OrganisationsPage = lazy(() => import("./Pages/admin/components/componentDash/OrganisationsPage"));
+const Planning = lazy(() => import("./Pages/admin/components/componentDash/Planning"));
+
+
 function PageLoader() {
     return (
         <div
@@ -96,6 +102,30 @@ export default function Main() {
                         element={
                             <Suspense fallback={<PageLoader />}>
                                 <Intervenants />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="formations"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <FormationsPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="organisations"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <OrganisationsPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="planning"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <Planning />
                             </Suspense>
                         }
                     />

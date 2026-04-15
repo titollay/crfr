@@ -1,3 +1,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* FullCalendar — thème aligné avec l’admin (ambre / slate) */
+@layer components {
+    .planning-page .fc {
+        --fc-border-color: rgb(226 232 240);
+        --fc-button-bg-color: rgb(255 255 255);
+        --fc-button-border-color: rgb(226 232 240);
+        --fc-button-text-color: rgb(51 65 85);
+        --fc-button-hover-bg-color: rgb(255 247 237);
+        --fc-button-hover-border-color: rgb(251 191 36);
+        --fc-button-active-bg-color: rgb(255 237 213);
+        --fc-today-bg-color: rgba(251, 191, 36, 0.12);
+        --fc-page-bg-color: transparent;
+        --fc-neutral-bg-color: rgb(248 250 252);
+        --fc-event-border-color: transparent;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .dark .planning-page .fc {
+        --fc-border-color: rgba(255, 255, 255, 0.1);
+        --fc-button-bg-color: rgb(23 23 23);
+        --fc-button-border-color: rgba(255, 255, 255, 0.12);
+        --fc-button-text-color: rgb(226 232 240);
+        --fc-button-hover-bg-color: rgba(255, 255, 255, 0.06);
+        --fc-button-hover-border-color: rgba(251, 191, 36, 0.5);
+        --fc-button-active-bg-color: rgba(251, 191, 36, 0.15);
+        --fc-today-bg-color: rgba(251, 191, 36, 0.08);
+        --fc-neutral-bg-color: rgba(255, 255, 255, 0.03);
+        --fc-page-bg-color: transparent;
+    }
+
+    .planning-page .fc .fc-toolbar-title {
+        @apply text-lg font-bold text-slate-800 dark:text-slate-100;
+    }
+}
