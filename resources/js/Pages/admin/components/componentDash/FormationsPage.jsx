@@ -993,65 +993,99 @@ function buildCombinedTimelineSeries(formations, intervenants, granularity) {
         return isNaN(d.getTime()) ? null : d;
     };
 
-    const keyFor = (date) => {
-        const d = new Date(date);
-        if (granularity === "day") {
-            const k = d.toISOString().split("T")[0];
-            return { key: k, sort: d.getTime() };
-        }
-        if (granularity === "month") {
-            const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-            return { key: k, sort: new Date(d.getFullYear(), d.getMonth(), 1).getTime() };
-        }
-        // Week: Sunday-based
-        const day = d.getDay();
-        const diff = d.getDate() - day;
-        const w0 = new Date(d.setDate(diff));
-        w0.setHours(0,0,0,0);
-        const k = `W-${w0.toISOString().split("T")[0]}`;
-        return { key: k, sort: w0.getTime() };
-    };
+    if (!formations || formations.length === 0) {
+        return { labels: [], formationCounts: [], intervenantCounts: [], participantTotals: [] };
+    }
 
-    const labelForKey = (key) => {
-        if (granularity === "day") {
-            return new Date(key).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-        }
-        if (granularity === "month") {
-            const [y, m] = key.split("-").map(Number);
-            return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
-        }
-        const raw = key.slice(2);
-        return `Sem. ${new Date(raw).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
-    };
+    let minTime = Infinity;
+    let maxTime = -Infinity;
 
-    const map = new Map();
-
-    // Fill formations
     formations.forEach(f => {
-        const d = parseLocal(f.date_debut || f.created_at);
-        if (!d) return;
-        const { key, sort } = keyFor(d);
-        if (!map.has(key)) map.set(key, { formations: 0, intervenants: 0, participants: 0, sort });
-        map.get(key).formations += 1;
-        map.get(key).participants += Math.max(0, parseInt(f.nbr_reel, 10) || parseInt(f.nbr_prevu, 10) || 0);
+        const start = parseLocal(f.date_debut);
+        let end = parseLocal(f.date_fin);
+        if (!end && start) end = start; 
+        if (start) minTime = Math.min(minTime, start.getTime());
+        if (end) maxTime = Math.max(maxTime, end.getTime());
     });
 
-    // Fill intervenants
-    intervenants.forEach(i => {
-        const d = parseLocal(i.created_at);
-        if (!d) return;
-        const { key, sort } = keyFor(d);
-        if (!map.has(key)) map.set(key, { formations: 0, intervenants: 0, sort });
-        map.get(key).intervenants += 1;
+    if (minTime === Infinity) {
+        minTime = new Date().getTime();
+        maxTime = minTime + 7 * 86400000;
+    }
+
+    const periods = [];
+    const minD = new Date(minTime);
+    minD.setHours(0,0,0,0);
+    const maxD = new Date(maxTime);
+    maxD.setHours(23,59,59,999);
+
+    let current = new Date(minD);
+
+    if (granularity === "day") {
+        while (current <= maxD) {
+            const end = new Date(current);
+            end.setHours(23,59,59,999);
+            periods.push({
+                start: new Date(current),
+                end,
+                label: current.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
+            });
+            current.setDate(current.getDate() + 1);
+        }
+    } else if (granularity === "month") {
+        current.setDate(1);
+        while (current <= maxD) {
+            const end = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59, 999);
+            periods.push({
+                start: new Date(current),
+                end,
+                label: current.toLocaleDateString("fr-FR", { month: "short", year: "numeric" })
+            });
+            current.setMonth(current.getMonth() + 1);
+        }
+    } else {
+        const day = current.getDay();
+        const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+        current.setDate(diff);
+        while (current <= maxD) {
+            const end = new Date(current);
+            end.setDate(current.getDate() + 6);
+            end.setHours(23,59,59,999);
+            const w0 = new Date(current);
+            periods.push({
+                start: w0,
+                end,
+                label: `Sem. ${w0.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
+            });
+            current.setDate(current.getDate() + 7);
+        }
+    }
+
+    const formationCounts = [];
+    const participantTotals = [];
+
+    periods.forEach(p => {
+        let fCount = 0;
+        let pTotal = 0;
+        formations.forEach(f => {
+            const fStart = parseLocal(f.date_debut);
+            let fEnd = parseLocal(f.date_fin);
+            if (!fEnd && fStart) fEnd = fStart;
+            
+            if (fStart && fStart.getTime() <= p.end.getTime() && fEnd.getTime() >= p.start.getTime()) {
+                fCount++;
+                pTotal += Math.max(0, parseInt(f.nbr_reel, 10) || parseInt(f.nbr_prevu, 10) || 0);
+            }
+        });
+        formationCounts.push(fCount);
+        participantTotals.push(pTotal);
     });
 
-    const sorted = Array.from(map.entries()).sort((a, b) => a[1].sort - b[1].sort);
-    
     return {
-        labels: sorted.map(([k]) => labelForKey(k)),
-        formationCounts: sorted.map(([, v]) => v.formations),
-        intervenantCounts: sorted.map(([, v]) => v.intervenants),
-        participantTotals: sorted.map(([, v]) => v.participants),
+        labels: periods.map(p => p.label),
+        formationCounts,
+        intervenantCounts: [],
+        participantTotals,
     };
 }
 
@@ -1287,17 +1321,17 @@ function FormationsPageInner() {
     const [orgFilterLabel, setOrgFilterLabel] = useState("Toutes");
     const [sortKey, setSortKey] = useState("date_debut");
     const [sortDir, setSortDir] = useState("desc");
-    const [isMobileTable, setIsMobileTable] = useState(
-        () => typeof window !== "undefined" && window.innerWidth < 860,
-    );
-
     const [modal, setModal] = useState(/** @type {null | 'add' | { edit: FormationRow } | { del: FormationRow }} */ (null));
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [toast, setToast] = useState(/** @type {{ msg: string; type: string } | null} */ (null));
-    const [activeTab, setActiveTab] = useState(/** @type {"liste" | "stats"} */ ("liste"));
-    const [timelineGranularity, setTimelineGranularity] = useState(/** @type {"day" | "week" | "month"} */ ("month"));
     const [kpiMode, setKpiMode] = useState("total");
+    const [activeTab, setActiveTab] = useState("liste");
+    const [page, setPage] = useState(1);
+    const [timelineGranularity, setTimelineGranularity] = useState("day");
+
+    useEffect(() => { setPage(1); }, [search, orgFilterLabel, sortKey, sortDir]);
+
 
     const token = localStorage.getItem("token");
     const headers = useMemo(
@@ -1457,6 +1491,10 @@ function FormationsPageInner() {
         return rows;
     }, [formations, search, orgFilterLabel, sortKey, sortDir]);
 
+    const itemsPerPage = 8;
+    const totalPages = Math.ceil(filteredSorted.length / itemsPerPage);
+    const paginated = filteredSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
     const statsData = useMemo(() => buildFormationStats(formations), [formations]);
 
     const kpiData = useMemo(() => {
@@ -1495,46 +1533,32 @@ function FormationsPageInner() {
         }
     };
 
-    const SortIcon = ({ k }) => {
-        if (sortKey !== k)
-            return <i className="fa-solid fa-sort" style={{ opacity: 0.25, fontSize: 10 }} />;
-        return (
-            <i
-                className={`fa-solid fa-sort-${sortDir === "asc" ? "up" : "down"}`}
-                style={{ color: PRIMARY, fontSize: 10 }}
-            />
-        );
-    };
+
 
     const cardStyle = {
         background: t.bg,
         borderRadius: 12,
-        boxShadow: t.shadow,
         border: `1px solid ${t.border}`,
-        transition: "background 0.3s, border-color 0.3s",
+        boxShadow: t.shadow,
+        overflow: "hidden",
     };
 
     const thBase = {
-        padding: "11px 14px",
+        padding: "12px 16px",
         textAlign: "left",
-        fontSize: "0.68rem",
-        textTransform: "uppercase",
-        letterSpacing: "0.12em",
+        fontSize: "0.7rem",
         fontWeight: 700,
         color: t.textMuted,
-        cursor: "pointer",
-        userSelect: "none",
-        whiteSpace: "nowrap",
-        background: t.dark ? "rgba(255,255,255,0.035)" : "#f7f8fb",
+        textTransform: "uppercase",
+        background: t.bgAlt,
         borderBottom: `1px solid ${t.border}`,
-        transition: "background 0.3s",
     };
 
     const tdBase = {
-        padding: "11px 14px",
+        padding: "12px 16px",
         fontSize: "0.82rem",
+        color: t.text,
         borderBottom: `1px solid ${t.borderSm}`,
-        verticalAlign: "middle",
     };
 
     const rowEvenBg = t.bg;
@@ -1577,25 +1601,21 @@ function FormationsPageInner() {
                 {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
                 {activeTab === "liste" && (
-                    <div className="flex flex-col gap-4">
-                            {listError && (
-                                <div style={{ padding: "12px 20px", borderRadius: 10, background: t.dark ? "rgba(239,68,68,0.12)" : "#fef2f2", color: t.dark ? "#fca5a5" : "#991b1b", fontSize: "0.84rem" }}>
-                                    {listError}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        <div style={cardStyle}>
+                            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${t.border}`, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: t.bgAlt }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, background: t.bgInput, border: `1px solid ${t.borderMd}`, borderRadius: 8, padding: "4px 10px", width: 240 }}>
+                                    <i className="fa-solid fa-magnifying-glass" style={{ fontSize: 12, color: t.textFaint }} />
+                                    <input placeholder="Rechercher..." style={{ border: "none", background: "transparent", outline: "none", color: t.text, fontSize: "0.82rem", flex: 1 }} value={search} onChange={e => setSearch(e.target.value)} />
                                 </div>
-                            )}
-                            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                                <div style={{ flex: 1, minWidth: 240, display: "flex", alignItems: "center", gap: 10, border: `1px solid ${t.borderMd}`, borderRadius: 12, padding: "10px 16px", background: t.bgInput, transition: "all 0.25s", boxShadow: search ? "0 0 0 3px rgba(217,119,6,0.12)" : "none" }}>
-                                    <i className="fa-solid fa-magnifying-glass" style={{ color: search ? PRIMARY : t.textMuted, fontSize: 13 }} />
-                                    <input style={{ border: "none", outline: "none", fontSize: "0.88rem", flex: 1, color: t.text, background: "transparent" }} placeholder="Rechercher une formation, organisation, lieu..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                                    {search && <button onClick={() => setSearch("")} style={{ border: "none", background: "transparent", color: t.textMuted, cursor: "pointer", padding: "0 4px" }}><i className="fa-solid fa-xmark" style={{ fontSize: 12 }} /></button>}
-                                </div>
-                                <div style={{ width: 240 }}>
+                                <div style={{ width: 200 }}>
                                     <CustomSelect value={orgFilterLabel} onChange={setOrgFilterLabel} options={orgOptions} />
                                 </div>
+                                <div style={{ fontSize: "0.75rem", color: t.textFaint }}>{filteredSorted.length} résultats</div>
                             </div>
 
-                            <div style={{ overflowX: "auto", borderRadius: 12, border: `1px solid ${t.border}`, background: t.bg, boxShadow: t.shadow }}>
-                                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+                            <div style={{ overflowX: "auto" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                     <thead>
                                         <tr>
                                             {[
@@ -1605,21 +1625,21 @@ function FormationsPageInner() {
                                                 { label: "Lieu", key: "lieu" },
                                                 { label: "Statut", key: "statut" }
                                             ].map(col => (
-                                                <th key={col.label} style={{ ...thBase, borderBottom: `1px solid ${t.border}` }} onClick={() => toggleSort(col.key)}>
+                                                <th key={col.label} style={thBase} onClick={() => toggleSort(col.key)}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                                        {col.label} <SortIcon k={col.key} />
+                                                        {col.label} {col.key === sortKey && <i className={`fa-solid fa-sort-${sortDir === "asc" ? "up" : "down"}`} style={{ color: PRIMARY }} />}
                                                     </div>
                                                 </th>
                                             ))}
-                                            <th style={{ ...thBase, textAlign: "right", borderBottom: `1px solid ${t.border}` }}>ACTIONS</th>
+                                            <th style={{ ...thBase, textAlign: "right" }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
                                             <tr><td colSpan={6} style={{ textAlign: "center", padding: 60, color: t.textMuted }}><i className="fa-solid fa-spinner fa-spin fa-2x" /></td></tr>
-                                        ) : filteredSorted.length === 0 ? (
+                                        ) : paginated.length === 0 ? (
                                             <tr><td colSpan={6} style={{ textAlign: "center", padding: 60, color: t.textMuted }}>Aucune formation trouvée</td></tr>
-                                        ) : filteredSorted.map((f, idx) => (
+                                        ) : paginated.map((f, idx) => (
                                             <tr key={f.id_forma} style={{ background: idx % 2 === 0 ? t.bg : (t.dark ? "rgba(255,255,255,0.02)" : "#fcfcfd"), transition: "background 0.2s" }}>
                                                 <td style={tdBase}><span style={{ fontWeight: 700, color: t.text }}>{f.sujet}</span></td>
                                                 <td style={tdBase}><span style={{ color: t.textSub }}>{f.organisation?.nom}</span></td>
@@ -1633,8 +1653,8 @@ function FormationsPageInner() {
                                                 <td style={tdBase}><FormationStatusBadge dateDebut={f.date_debut} dateFin={f.date_fin} /></td>
                                                 <td style={{ ...tdBase, textAlign: "right" }}>
                                                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                                        <button onClick={() => setModal({ edit: f })} style={actionBtnStyle(t, "edit")} title="Modifier"><i className="fa-solid fa-pen" /></button>
-                                                        <button onClick={() => setModal({ del: f })} style={actionBtnStyle(t, "delete")} title="Supprimer"><i className="fa-solid fa-trash" /></button>
+                                                        <button onClick={() => setModal({ edit: f })} style={{ border: "solid 1px ", background: "transparent", color: PRIMARY, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5 }}><i className="fa-solid fa-pen" /></button>
+                                                        <button onClick={() => setModal({ del: f })} style={{ border: "solid 1px ", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5 }}><i className="fa-solid fa-trash" /></button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -1642,7 +1662,20 @@ function FormationsPageInner() {
                                     </tbody>
                                 </table>
                             </div>
+                            {/* Pagination Controls */}
+                            {!loading && filteredSorted.length > 0 && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${t.borderSm}`, background: t.bgAlt }}>
+                                    <span style={{ fontSize: "0.75rem", color: t.textMuted }}>
+                                        Affichage de {(page - 1) * itemsPerPage + 1} à {Math.min(page * itemsPerPage, filteredSorted.length)} sur {filteredSorted.length} résultats
+                                    </span>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                        <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === 1 ? "transparent" : t.bgInput, color: page === 1 ? t.textFaint : t.text, cursor: page === 1 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-left" /></button>
+                                        <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => p + 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === totalPages || totalPages === 0 ? "transparent" : t.bgInput, color: page === totalPages || totalPages === 0 ? t.textFaint : t.text, cursor: page === totalPages || totalPages === 0 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-right" /></button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
+                    </div>
                 )}
 
                 {activeTab === "stats" && (
@@ -1710,7 +1743,7 @@ function FormationsPageInner() {
                                         Formations par période
                                     </h3>
                                     <p style={{ margin: "0 0 14px", fontSize: "0.72rem", color: t.textMuted }}>
-                                        Nombre de formations regroupées selon leur date de début (jour, semaine ou mois).
+                                        Évolution du nombre de formations existantes dans le temps.
                                     </p>
                                     <FormationsCountTimelineBar
                                         labels={timelineSeries.labels}
@@ -1724,7 +1757,7 @@ function FormationsPageInner() {
                                         Participants par période
                                     </h3>
                                     <p style={{ margin: "0 0 14px", fontSize: "0.72rem", color: t.textMuted }}>
-                                        Total des participants par période (réel si renseigné, sinon prévu), sur la même échelle que le graphique des formations.
+                                        Évolution du nombre total cumulé de participants.
                                     </p>
                                     <ParticipantsTimelineLine
                                         labels={timelineSeries.labels}

@@ -820,9 +820,8 @@ function OrganisationsPageInner() {
     const [typeFilter, setTypeFilter] = useState("Tous");
     const [sortKey, setSortKey] = useState("nom");
     const [sortDir, setSortDir] = useState("asc");
-    const [isMobileTable, setIsMobileTable] = useState(
-        () => typeof window !== "undefined" && window.innerWidth < 860,
-    );
+    const [page, setPage] = useState(1);
+    useEffect(() => { setPage(1); }, [search, typeFilter, sortKey, sortDir]);
 
     const [modal, setModal] = useState(
         /** @type {null | 'add' | { edit: OrgRow } | { del: OrgRow }} */ (null),
@@ -866,11 +865,7 @@ function OrganisationsPageInner() {
         fetchAll();
     }, [fetchAll]);
 
-    useEffect(() => {
-        const onResize = () => setIsMobileTable(window.innerWidth < 860);
-        window.addEventListener("resize", onResize);
-        return () => window.removeEventListener("resize", onResize);
-    }, []);
+
 
     const typeOptions = useMemo(() => {
         const types = [...new Set(orgs.map((o) => o.type?.trim()).filter(Boolean))].sort((a, b) =>
@@ -1011,6 +1006,10 @@ function OrganisationsPageInner() {
         return rows;
     }, [orgs, search, typeFilter, sortKey, sortDir]);
 
+    const itemsPerPage = 8;
+    const totalPages = Math.ceil(filteredSorted.length / itemsPerPage);
+    const paginated = filteredSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
     const toggleSort = (key) => {
         if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
         else {
@@ -1021,46 +1020,32 @@ function OrganisationsPageInner() {
         }
     };
 
-    const SortIcon = ({ k }) => {
-        if (sortKey !== k)
-            return <i className="fa-solid fa-sort" style={{ opacity: 0.25, fontSize: 10 }} />;
-        return (
-            <i
-                className={`fa-solid fa-sort-${sortDir === "asc" ? "up" : "down"}`}
-                style={{ color: PRIMARY, fontSize: 10 }}
-            />
-        );
-    };
+
 
     const cardStyle = {
         background: t.bg,
         borderRadius: 12,
-        boxShadow: t.shadow,
         border: `1px solid ${t.border}`,
-        transition: "background 0.3s, border-color 0.3s",
+        boxShadow: t.shadow,
+        overflow: "hidden",
     };
 
     const thBase = {
-        padding: "11px 14px",
+        padding: "12px 16px",
         textAlign: "left",
-        fontSize: "0.68rem",
-        textTransform: "uppercase",
-        letterSpacing: "0.12em",
+        fontSize: "0.7rem",
         fontWeight: 700,
         color: t.textMuted,
-        cursor: "pointer",
-        userSelect: "none",
-        whiteSpace: "nowrap",
-        background: t.dark ? "rgba(255,255,255,0.035)" : "#f7f8fb",
+        textTransform: "uppercase",
+        background: t.bgAlt,
         borderBottom: `1px solid ${t.border}`,
-        transition: "background 0.3s",
     };
 
     const tdBase = {
-        padding: "11px 14px",
+        padding: "12px 16px",
         fontSize: "0.82rem",
+        color: t.text,
         borderBottom: `1px solid ${t.borderSm}`,
-        verticalAlign: "middle",
     };
 
     const rowEvenBg = t.bg;
@@ -1112,31 +1097,25 @@ function OrganisationsPageInner() {
                                 </div>
                             )}
 
-                            {/* ── Filters ── */}
-                            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                                <div style={{ flex: 1, minWidth: 200, display: "flex", alignItems: "center", gap: 8, border: `1px solid ${t.borderMd}`, borderRadius: 10, padding: "8px 12px", background: t.bgInput, transition: "all 0.25s", boxShadow: search ? "0 0 0 3px rgba(217,119,6,0.12)" : "none" }}>
-                                    <i className="fa-solid fa-magnifying-glass" style={{ color: search ? PRIMARY : t.textFaint, fontSize: 13 }} />
-                                    <input
-                                        style={{ border: "none", outline: "none", fontSize: "0.82rem", flex: 1, fontFamily: "'DM Sans', sans-serif", color: t.text, background: "transparent" }}
-                                        placeholder="Rechercher…"
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                    />
-                                    {search && (
-                                        <button type="button" onClick={() => setSearch("")} style={{ border: "none", background: "none", cursor: "pointer", color: t.textFaint, fontSize: 12 }}>
-                                            <i className="fa-solid fa-xmark" />
-                                        </button>
-                                    )}
+                            {/* ── Table & Filters ── */}
+                            <div style={cardStyle}>
+                                <div style={{ padding: "16px 20px", borderBottom: `1px solid ${t.border}`, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: t.bgAlt }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: t.bgInput, border: `1px solid ${t.borderMd}`, borderRadius: 8, padding: "4px 10px", width: 240 }}>
+                                        <i className="fa-solid fa-magnifying-glass" style={{ fontSize: 12, color: t.textFaint }} />
+                                        <input
+                                            placeholder="Rechercher..."
+                                            style={{ border: "none", background: "transparent", outline: "none", color: t.text, fontSize: "0.82rem", flex: 1, fontFamily: "'DM Sans', sans-serif" }}
+                                            value={search}
+                                            onChange={e => setSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    <div style={{ width: 180 }}>
+                                        <CustomSelect value={typeFilter} onChange={setTypeFilter} options={typeOptions} />
+                                    </div>
+                                    <div style={{ fontSize: "0.75rem", color: t.textFaint }}>{filteredSorted.length} résultats</div>
                                 </div>
-                                <div style={{ minWidth: 200 }}>
-                                    <CustomSelect value={typeFilter} onChange={setTypeFilter} options={typeOptions} />
-                                </div>
-                                <span style={{ fontSize: "0.75rem", color: t.textFaint, whiteSpace: "nowrap" }}>
-                                    {filteredSorted.length} résultat{filteredSorted.length > 1 ? "s" : ""}
-                                </span>
-                            </div>
 
-                            <div style={{ overflowX: "auto", display: isMobileTable ? "none" : "block", background: t.bg, borderRadius: 12, border: `1px solid ${t.border}`, boxShadow: t.shadow }}>
+                            <div style={{ overflowX: "auto" }}>
                                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                     <thead>
                                         <tr>
@@ -1148,18 +1127,13 @@ function OrganisationsPageInner() {
                                                 { label: "Form.", key: "formations_count" },
                                                 { label: "Créée", key: "created_at" },
                                             ].map((col) => (
-                                                <th
-                                                    key={col.key}
-                                                    style={thBase}
-                                                    onClick={() => toggleSort(col.key)}
-                                                >
-                                                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                                        {col.label}
-                                                        <SortIcon k={col.key} />
-                                                    </span>
+                                             <th key={col.key} style={thBase} onClick={() => toggleSort(col.key)}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                                        {col.label} {col.key === sortKey && <i className={`fa-solid fa-sort-${sortDir === "asc" ? "up" : "down"}`} style={{ color: PRIMARY }} />}
+                                                    </div>
                                                 </th>
                                             ))}
-                                            <th style={{ ...thBase, textAlign: "right", cursor: "default" }}>Actions</th>
+                                            <th style={{ ...thBase, textAlign: "right" }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1173,28 +1147,19 @@ function OrganisationsPageInner() {
                                                     <p style={{ marginTop: 10, fontSize: "0.82rem" }}>Chargement…</p>
                                                 </td>
                                             </tr>
-                                        ) : filteredSorted.length === 0 ? (
+                                        ) : paginated.length === 0 ? (
                                             <tr>
                                                 <td colSpan={7} style={{ padding: "40px", textAlign: "center", color: t.textFaint }}>
                                                     <p style={{ fontSize: "0.82rem", margin: 0 }}>Aucune organisation trouvée</p>
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredSorted.map((o, i) => {
-                                                const isEven = i % 2 === 0;
+                                            paginated.map((o, i) => {
                                                 return (
                                                     <tr
                                                         key={o.id_org}
                                                         style={{
-                                                            borderBottom: `1px solid ${t.borderSm}`,
-                                                            background: isEven ? rowEvenBg : rowOddBg,
-                                                            transition: "background 0.2s"
-                                                        }}
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.background = t.bgHover;
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.background = isEven ? rowEvenBg : rowOddBg;
+                                                            background: i % 2 === 0 ? t.bg : t.bgAlt2
                                                         }}
                                                     >
                                                         <td style={tdBase}>
@@ -1223,22 +1188,8 @@ function OrganisationsPageInner() {
                                                         </td>
                                                         <td style={tdBase}>
                                                             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                                                <button
-                                                                    type="button"
-                                                                    title="Modifier"
-                                                                    style={actionBtnStyle(t, "edit")}
-                                                                    onClick={() => setModal({ edit: o })}
-                                                                >
-                                                                    <i className="fa-solid fa-pen-to-square" />
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    title="Supprimer"
-                                                                    style={actionBtnStyle(t, "delete")}
-                                                                    onClick={() => setModal({ del: o })}
-                                                                >
-                                                                    <i className="fa-solid fa-trash" />
-                                                                </button>
+                                                                <button onClick={() => setModal({ edit: o })} style={{ border: "solid 1px ", background: "transparent", color: PRIMARY, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5 }}><i className="fa-solid fa-pen" /></button>
+                                                                <button onClick={() => setModal({ del: o })} style={{ border: "solid 1px ", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5 }}><i className="fa-solid fa-trash" /></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1249,63 +1200,24 @@ function OrganisationsPageInner() {
                                 </table>
                             </div>
 
-                            <div
-                                style={{
-                                    display: isMobileTable ? "grid" : "none",
-                                    gap: 10,
-                                    padding: 12,
-                                }}
-                            >
-                                {loading ? (
-                                    <div style={{ padding: 18, textAlign: "center", color: t.textFaint }}>Chargement…</div>
-                                ) : filteredSorted.length === 0 ? (
-                                    <div style={{ padding: 18, textAlign: "center", color: t.textFaint }}>
-                                        Aucune organisation
+                            {/* Pagination Controls */}
+                            {!loading && filteredSorted.length > 0 && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${t.borderSm}`, background: t.bgAlt }}>
+                                    <span style={{ fontSize: "0.75rem", color: t.textMuted }}>
+                                        Affichage de {(page - 1) * itemsPerPage + 1} à {Math.min(page * itemsPerPage, filteredSorted.length)} sur {filteredSorted.length} résultats
+                                    </span>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                        <button disabled={page === 1} onClick={() => setPage(p => p - 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === 1 ? "transparent" : t.bgInput, color: page === 1 ? t.textFaint : t.text, cursor: page === 1 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-left" /></button>
+                                        <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => p + 1)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${t.borderMd}`, background: page === totalPages || totalPages === 0 ? "transparent" : t.bgInput, color: page === totalPages || totalPages === 0 ? t.textFaint : t.text, cursor: page === totalPages || totalPages === 0 ? "default" : "pointer" }}><i className="fa-solid fa-chevron-right" /></button>
                                     </div>
-                                ) : (
-                                    filteredSorted.map((o) => (
-                                        <div
-                                            key={`m-${o.id_org}`}
-                                            style={{
-                                                border: `1px solid ${t.border}`,
-                                                borderRadius: 10,
-                                                padding: 14,
-                                                background: t.bgAlt,
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: 800, color: t.text, marginBottom: 8 }}>{o.nom}</div>
-                                            <div style={{ fontSize: "0.8rem", color: t.textSub, display: "grid", gap: 6 }}>
-                                                <span>
-                                                    <i className="fa-solid fa-location-dot" style={{ width: 16 }} /> {o.ville_org}{" "}
-                                                    · {o.type}
-                                                </span>
-                                                <span>
-                                                    Intervenants : {o.intervenants_count} · Formations : {o.formations_count}
-                                                </span>
-                                            </div>
-                                            <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setModal({ edit: o })}
-                                                    style={{ ...actionBtnStyle(t, "edit"), width: "auto", padding: "0 12px" }}
-                                                >
-                                                    <i className="fa-solid fa-pen" /> Modifier
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setModal({ del: o })}
-                                                    style={{ ...actionBtnStyle(t, "delete"), width: "auto", padding: "0 12px" }}
-                                                >
-                                                    <i className="fa-solid fa-trash" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                </div>
+                            )}
+
+                            {/* Mobile Grid removed for consistency with Chambres layout */}
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
                 {activeTab === "stats" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 24, animation: "fadeInUp 0.5s ease forwards" }}>
