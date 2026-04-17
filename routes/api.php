@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\FormateurController;
 
 
 
@@ -55,4 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('organisations', [OrganisationController::class, 'store']);
     Route::put('organisations/{id_org}', [OrganisationController::class, 'update']);
     Route::delete('organisations/{id_org}', [OrganisationController::class, 'destroy']);
+
+    // Formateurs
+    Route::get('formateurs', [FormateurController::class, 'index']);
+    Route::post('formateurs', [FormateurController::class, 'store']);
+    Route::put('formateurs/{id}', [FormateurController::class, 'update']);
+    Route::delete('formateurs/{id}', [FormateurController::class, 'destroy']);
 });

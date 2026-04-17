@@ -95,7 +95,12 @@ class FormationController extends Controller
             'superviseur' => 'nullable|string|max:255',
             'heures_formation' => 'nullable|integer|min:0',
             'observations' => 'nullable|string',
+            'formateurs_ids' => 'nullable|array',
+            'formateurs_ids.*' => 'exists:formateurs,id_formateur',
         ]);
+
+        $formateursIds = $request->input('formateurs_ids', []);
+        $validated['nb_formateurs'] = count($formateursIds);
 
         $validated['nbr_prevu'] = (int) ($validated['nbr_prevu'] ?? 0);
         $validated['nbr_reel'] = (int) ($validated['nbr_reel'] ?? 0);
@@ -120,6 +125,12 @@ class FormationController extends Controller
         }
 
         $formation = Formation::create($validated);
+        
+        // Attach formateurs
+        if (!empty($formateursIds)) {
+            $formation->formateurs()->attach($formateursIds);
+        }
+
         $formation->load(['organisation:id_org,nom,type', 'salle_relation']);
 
         // Sync the salle status
@@ -145,7 +156,12 @@ class FormationController extends Controller
             'superviseur' => 'nullable|string|max:255',
             'heures_formation' => 'nullable|integer|min:0',
             'observations' => 'nullable|string',
+            'formateurs_ids' => 'nullable|array',
+            'formateurs_ids.*' => 'exists:formateurs,id_formateur',
         ]);
+
+        $formateursIds = $request->input('formateurs_ids', []);
+        $validated['nb_formateurs'] = count($formateursIds);
 
         $validated['nbr_prevu'] = (int) ($validated['nbr_prevu'] ?? 0);
         $validated['nbr_reel'] = (int) ($validated['nbr_reel'] ?? 0);
@@ -170,6 +186,10 @@ class FormationController extends Controller
         }
 
         $formation->update($validated);
+        
+        // Sync formateurs
+        $formation->formateurs()->sync($formateursIds);
+
         $formation->load(['organisation:id_org,nom,type', 'salle_relation']);
 
         // Sync both old and new salle status
@@ -257,6 +277,8 @@ class FormationController extends Controller
             'superviseur' => $f->superviseur,
             'heures_formation' => (int) $f->heures_formation,
             'observations' => $f->observations,
+            'nb_formateurs' => (int) ($f->nb_formateurs ?? 0),
+            'formateurs_ids' => $f->formateurs->pluck('id_formateur')->toArray(),
             'organisation' => $f->organisation
                 ? [
                     'nom' => $f->organisation->nom,
