@@ -20,6 +20,7 @@ class Formation extends Model
         'sujet', 'statut', 'categorie_cible', 'id_org', 'lieu',
         'date_debut', 'date_fin', 'nbr_prevu', 'nbr_reel',
         'superviseur', 'heures_formation', 'observations', 'salle', 'id_salle',
+        'nb_formateurs',
     ];
 
     public function organisation()
@@ -30,5 +31,10 @@ class Formation extends Model
     public function salle_relation()
     {
         return $this->belongsTo(Salle::class, 'id_salle', 'id_salle');
+    }
+
+    public function formateurs()
+    {
+        return $this->belongsToMany(Formateur::class, 'formation_formateur', 'formation_id', 'formateur_id');
     }
 }

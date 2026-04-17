@@ -19,7 +19,7 @@ const NAV_SECTIONS = [
         title: "FORMATION",
         items: [
             { href: "/dashboard/formations", icon: "fa-solid fa-graduation-cap", label: "Formations" },
-            { href: "/dashboard/planning", icon: "fa-solid fa-calendar-days", label: "Planning" },
+            { href: "/dashboard/formateurs", icon: "fa-solid fa-chalkboard-user", label: "Formateurs" },
             { href: "/dashboard/organisations", icon: "fa-solid fa-building", label: "Organisations" },
         ],
     },

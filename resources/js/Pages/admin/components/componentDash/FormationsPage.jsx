@@ -510,18 +510,29 @@ function formationFormFromInitial(initial) {
         superviseur: initial.superviseur ?? "",
         heures_formation: String(initial.heures_formation ?? 0),
         observations: initial.observations ?? "",
+        formateurs_ids: initial.formateurs_ids ?? [],
     };
 }
 
-function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
+function FormationForm({ initial = {}, onSubmit, loading, organisations, formateurs }) {
     const t = useTheme();
     const [form, setForm] = useState(() => formationFormFromInitial(initial));
     const [errors, setErrors] = useState({});
     const [focus, setFocus] = useState(null);
     const [availableSalles, setAvailableSalles] = useState([]);
     const [loadingSalles, setLoadingSalles] = useState(false);
+    const [searchTrainer, setSearchTrainer] = useState("");
 
     const isEdit = Boolean(initial.id_forma);
+
+    const filteredTrainers = useMemo(() => {
+        const q = searchTrainer.toLowerCase().trim();
+        if (!q) return formateurs || [];
+        return (formateurs || []).filter(f => 
+            f.cin.toLowerCase().includes(q) || 
+            (f.attribut && f.attribut.toLowerCase().includes(q))
+        );
+    }, [formateurs, searchTrainer]);
 
     useEffect(() => {
         setForm(formationFormFromInitial(initial));
@@ -569,6 +580,15 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
         }
     };
 
+    const toggleFormateur = (id) => {
+        const current = form.formateurs_ids;
+        if (current.includes(id)) {
+            set("formateurs_ids", current.filter(x => x !== id));
+        } else {
+            set("formateurs_ids", [...current, id]);
+        }
+    };
+
     const validate = () => {
         const e = {};
         if (!form.sujet.trim()) e.sujet = "Sujet requis";
@@ -599,6 +619,7 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
             superviseur: form.superviseur.trim() || null,
             heures_formation: Number(form.heures_formation) || 0,
             observations: form.observations.trim() || null,
+            formateurs_ids: form.formateurs_ids,
         });
     };
 
@@ -771,6 +792,95 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations }) {
                     />
                 </Field>
             </div>
+
+            <Field label="Formateurs (Multi-sélection)" error={errors.formateurs_ids}>
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                    <i 
+                        className="fa-solid fa-magnifying-glass" 
+                        style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 11, color: t.textFaint }} 
+                    />
+                    <input 
+                        placeholder="Rechercher par CIN..."
+                        value={searchTrainer}
+                        onChange={e => setSearchTrainer(e.target.value)}
+                        style={{
+                            width: "100%",
+                            background: t.bgAlt,
+                            border: `1px solid ${t.borderMd}`,
+                            borderRadius: 6,
+                            padding: "6px 10px 6px 30px",
+                            fontSize: "0.78rem",
+                            color: t.text,
+                            outline: "none",
+                            transition: "border-color 0.2s"
+                        }}
+                        onFocus={e => e.target.style.borderColor = PRIMARY}
+                        onBlur={e => e.target.style.borderColor = t.borderMd}
+                    />
+                </div>
+                <div 
+                    style={{ 
+                        display: "flex", 
+                        flexDirection: "column", 
+                        gap: 8, 
+                        border: `1px solid ${t.borderMd}`, 
+                        borderRadius: 8, 
+                        padding: 12,
+                        maxHeight: 180,
+                        overflowY: "auto",
+                        background: t.bgInput
+                    }}
+                >
+                    {filteredTrainers.length === 0 ? (
+                        <div style={{ fontSize: "0.8rem", color: t.textFaint, fontStyle: "italic", textAlign: "center", padding: "10px 0" }}>
+                            {searchTrainer ? "Aucun résultat pour cette recherche." : "Aucun formateur disponible."}
+                        </div>
+                    ) : (
+                        filteredTrainers.map((f) => {
+                            const selected = form.formateurs_ids.includes(f.id_formateur);
+                            return (
+                                <div 
+                                    key={f.id_formateur} 
+                                    onClick={() => toggleFormateur(f.id_formateur)}
+                                    style={{ 
+                                        display: "flex", 
+                                        alignItems: "center", 
+                                        gap: 10, 
+                                        padding: "6px 10px", 
+                                        borderRadius: 6, 
+                                        cursor: "pointer",
+                                        background: selected ? (t.dark ? "rgba(217,119,6,0.15)" : "rgba(217,119,6,0.06)") : "transparent",
+                                        transition: "all 0.15s"
+                                    }}
+                                >
+                                    <div style={{ 
+                                        width: 16, 
+                                        height: 16, 
+                                        borderRadius: 4, 
+                                        border: `1.5px solid ${selected ? PRIMARY : t.borderMd}`,
+                                        background: selected ? PRIMARY : "transparent",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#fff",
+                                        fontSize: 10
+                                    }}>
+                                        {selected && <i className="fa-solid fa-check" />}
+                                    </div>
+                                    <span style={{ fontSize: "0.85rem", color: selected ? PRIMARY : t.text, fontWeight: selected ? 600 : 400 }}>
+                                        {f.cin} {f.attribut ? `(${f.attribut})` : ""}
+                                    </span>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+                {form.formateurs_ids.length > 0 && (
+                     <span style={{ fontSize: "0.7rem", color: PRIMARY, fontWeight: 600 }}>
+                         {form.formateurs_ids.length} formateur(s) sélectionné(s)
+                     </span>
+                )}
+            </Field>
 
             <Field label="Observations" error={errors.observations}>
                 <textarea
@@ -1314,6 +1424,7 @@ function FormationsPageInner() {
     const [formations, setFormations] = useState(/** @type {FormationRow[]} */ ([]));
     const [organisations, setOrganisations] = useState(/** @type {Organisation[]} */ ([]));
     const [intervenants, setIntervenants] = useState(/** @type {any[]} */ ([]));
+    const [formateurs, setFormateurs] = useState(/** @type {any[]} */ ([]));
     const [salles, setSalles] = useState(/** @type {any[]} */ ([]));
     const [loading, setLoading] = useState(true);
     const [listError, setListError] = useState(/** @type {string | null} */ (null));
@@ -1348,16 +1459,18 @@ function FormationsPageInner() {
         setLoading(true);
         setListError(null);
         try {
-            const [formRes, orgRes, sallesRes, interRes] = await Promise.all([
+            const [formRes, orgRes, sallesRes, interRes, formatRes] = await Promise.all([
                 axios.get("/api/formations", { headers }),
                 axios.get("/api/organisations", { headers }),
                 axios.get("/api/salles", { headers }),
                 axios.get("/api/intervenants", { headers }),
+                axios.get("/api/formateurs", { headers }),
             ]);
             setFormations(Array.isArray(formRes.data) ? formRes.data : []);
             setOrganisations(Array.isArray(orgRes.data) ? orgRes.data : []);
             setSalles(Array.isArray(sallesRes.data) ? sallesRes.data : []);
             setIntervenants(Array.isArray(interRes.data) ? interRes.data : []);
+            setFormateurs(Array.isArray(formatRes.data) ? formatRes.data : []);
         } catch (err) {
             setListError(
                 err.response?.data?.message ??
@@ -1491,7 +1604,7 @@ function FormationsPageInner() {
         return rows;
     }, [formations, search, orgFilterLabel, sortKey, sortDir]);
 
-    const itemsPerPage = 8;
+    const itemsPerPage = 7;
     const totalPages = Math.ceil(filteredSorted.length / itemsPerPage);
     const paginated = filteredSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
@@ -1623,6 +1736,7 @@ function FormationsPageInner() {
                                                 { label: "Organisation", key: "organisation" },
                                                 { label: "Dates", key: "date_debut" },
                                                 { label: "Lieu", key: "lieu" },
+                                                { label: "Formateurs", key: "nb_formateurs" },
                                                 { label: "Statut", key: "statut" }
                                             ].map(col => (
                                                 <th key={col.label} style={thBase} onClick={() => toggleSort(col.key)}>
@@ -1650,6 +1764,24 @@ function FormationsPageInner() {
                                                     </div>
                                                 </td>
                                                 <td style={tdBase}><span style={{ color: t.textMuted }}>{f.lieu}</span></td>
+                                                <td style={tdBase}>
+                                                    <span 
+                                                        style={{ 
+                                                            display: "inline-flex", 
+                                                            alignItems: "center", 
+                                                            justifyContent: "center", 
+                                                            width: 24, 
+                                                            height: 24, 
+                                                            borderRadius: "50%", 
+                                                            background: f.nb_formateurs > 0 ? "rgba(217,119,6,0.12)" : t.bgAlt, 
+                                                            color: f.nb_formateurs > 0 ? PRIMARY : t.textFaint,
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: 700
+                                                        }}
+                                                    >
+                                                        {f.nb_formateurs}
+                                                    </span>
+                                                </td>
                                                 <td style={tdBase}><FormationStatusBadge dateDebut={f.date_debut} dateFin={f.date_fin} /></td>
                                                 <td style={{ ...tdBase, textAlign: "right" }}>
                                                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -1782,24 +1914,23 @@ function FormationsPageInner() {
 
 
             {modal === "add" && (
-                <Modal title="Ajouter une formation" onClose={closeModal}>
+                <Modal title="Nouvelle Formation" onClose={closeModal}>
                     <FormationForm
-                        key="add"
-                        initial={{}}
-                        organisations={organisations}
                         onSubmit={handleAdd}
                         loading={saving}
+                        organisations={organisations}
+                        formateurs={formateurs}
                     />
                 </Modal>
             )}
-            {modal?.edit && (
-                <Modal title={`Modifier — ${modal.edit.sujet}`} onClose={closeModal}>
+            {modal && typeof modal === "object" && "edit" in modal && (
+                <Modal title="Modifier la formation" onClose={closeModal}>
                     <FormationForm
-                        key={modal.edit.id_forma}
                         initial={modal.edit}
-                        organisations={organisations}
                         onSubmit={handleEdit}
                         loading={saving}
+                        organisations={organisations}
+                        formateurs={formateurs}
                     />
                 </Modal>
             )}

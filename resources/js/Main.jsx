@@ -25,7 +25,7 @@ function LegacyIndexRedirect() {
 
 const FormationsPage = lazy(() => import("./Pages/admin/components/componentDash/FormationsPage"));
 const OrganisationsPage = lazy(() => import("./Pages/admin/components/componentDash/OrganisationsPage"));
-const Planning = lazy(() => import("./Pages/admin/components/componentDash/Planning"));
+const FormateursPage = lazy(() => import("./Pages/admin/components/componentDash/FormateursPage"));
 
 
 function PageLoader() {
@@ -122,10 +122,10 @@ export default function Main() {
                         }
                     />
                     <Route
-                        path="planning"
+                        path="formateurs"
                         element={
                             <Suspense fallback={<PageLoader />}>
-                                <Planning />
+                                <FormateursPage />
                             </Suspense>
                         }
                     />

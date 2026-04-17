@@ -1006,7 +1006,7 @@ function OrganisationsPageInner() {
         return rows;
     }, [orgs, search, typeFilter, sortKey, sortDir]);
 
-    const itemsPerPage = 8;
+    const itemsPerPage = 7;
     const totalPages = Math.ceil(filteredSorted.length / itemsPerPage);
     const paginated = filteredSorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
