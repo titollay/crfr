@@ -12,9 +12,13 @@ class Intervenant extends Model
     protected $primaryKey = 'id_inter';
 
     protected $fillable = [
-        'nom', 'prenom', 'cin', 'telephone', 'email', 'ville', 
-        'id_org', 'date_naissance', 'cadre', 'mission', 
-        'nationalite', 'adresse'
+        'nom', 'prenom', 'cin', 'telephone', 'email', 'ville',
+        'id_org', 'date_naissance', 'cadre', 'mission',
+        'nationalite', 'adresse', 'a_formation',
+    ];
+
+    protected $casts = [
+        'a_formation' => 'boolean',
     ];
 
     public function organisation()

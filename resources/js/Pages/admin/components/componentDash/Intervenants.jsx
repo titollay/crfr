@@ -334,7 +334,7 @@ function Field({ label, required, children, error }) {
     );
 }
 
-/* ------------------- Intervenant Form ------------------- */
+/* ------------------- Bénéficiaire Form ------------------- */
 function IntervenantForm({ initial = {}, onSubmit, loading, organisations }) {
     const t = useTheme();
     const [form, setForm] = useState({
@@ -350,6 +350,7 @@ function IntervenantForm({ initial = {}, onSubmit, loading, organisations }) {
         mission: initial.mission || "",
         nationalite: initial.nationalite || "Marocaine",
         adresse: initial.adresse || "",
+        a_formation: initial.a_formation != null ? initial.a_formation : false,
     });
     const [errors, setErrors] = useState({});
     const [focus, setFocus] = useState(null);
@@ -372,8 +373,10 @@ function IntervenantForm({ initial = {}, onSubmit, loading, organisations }) {
         if (!form.id_org) e.id_org = "Organisation requise";
         if (!form.date_naissance)
             e.date_naissance = "Date de naissance requise";
-        if (!form.cadre.trim()) e.cadre = "Cadre requis";
-        if (!form.mission.trim()) e.mission = "Mission requise";
+        if (form.a_formation) {
+            if (!form.cadre?.trim()) e.cadre = "Cadre requis";
+            if (!form.mission?.trim()) e.mission = "Mission requise";
+        }
         if (!form.nationalite.trim()) e.nationalite = "Nationalité requise";
         if (!form.adresse.trim()) e.adresse = "Adresse requise";
         setErrors(e);
@@ -382,7 +385,13 @@ function IntervenantForm({ initial = {}, onSubmit, loading, organisations }) {
 
     const handle = (e) => {
         e.preventDefault();
-        if (validate()) onSubmit(form);
+        if (!validate()) return;
+        const payload = { ...form };
+        if (!payload.a_formation) {
+            payload.cadre = null;
+            payload.mission = null;
+        }
+        onSubmit(payload);
     };
 
     const inputStyle = (k) => ({
@@ -557,34 +566,78 @@ function IntervenantForm({ initial = {}, onSubmit, loading, organisations }) {
                 </Field>
             </div>
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 14,
-                }}
-            >
-                <Field label="Cadre" required error={errors.cadre}>
-                    <input
-                        style={inputStyle("cadre")}
-                        value={form.cadre}
-                        onChange={(e) => set("cadre", e.target.value)}
-                        onFocus={() => setFocus("cadre")}
-                        onBlur={() => setFocus(null)}
-                        placeholder="Ex: Technicien"
-                    />
-                </Field>
-                <Field label="Mission" required error={errors.mission}>
-                    <input
-                        style={inputStyle("mission")}
-                        value={form.mission}
-                        onChange={(e) => set("mission", e.target.value)}
-                        onFocus={() => setFocus("mission")}
-                        onBlur={() => setFocus(null)}
-                        placeholder="Ex: Formation IT"
-                    />
-                </Field>
-            </div>
+            {/* --- Toggle formation --- */}
+            <Field label="Le bénéficiaire suit-il une formation ?" required>
+                <div style={{ display: "flex", gap: 10 }}>
+                    {[{ value: true, label: "Oui" }, { value: false, label: "Non" }].map((opt) => {
+                        const sel = form.a_formation === opt.value;
+                        return (
+                            <button
+                                key={String(opt.value)}
+                                type="button"
+                                onClick={() => set("a_formation", opt.value)}
+                                style={{
+                                    flex: 1,
+                                    padding: "10px 0",
+                                    borderRadius: 8,
+                                    border: `1.5px solid ${sel ? PRIMARY : t.borderMd}`,
+                                    background: sel
+                                        ? t.dark ? "rgba(217,119,6,0.14)" : "#fff7ed"
+                                        : t.bgInput,
+                                    color: sel ? PRIMARY : t.textSub,
+                                    fontWeight: 700,
+                                    fontSize: "0.85rem",
+                                    cursor: "pointer",
+                                    fontFamily: "'DM Sans', sans-serif",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 8,
+                                    transition: "all 0.2s",
+                                    boxShadow: sel ? "0 0 0 3px rgba(217,119,6,0.12)" : "none",
+                                }}
+                            >
+                                <i className={sel ? "fa-solid fa-circle-check" : "fa-regular fa-circle"} style={{ fontSize: 14 }} />
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </Field>
+
+            {/* --- Cadre & Mission (conditionnel) --- */}
+            {form.a_formation && (
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 14,
+                        animation: "fadeIn 0.25s ease",
+                    }}
+                >
+                    <Field label="Cadre" required error={errors.cadre}>
+                        <input
+                            style={inputStyle("cadre")}
+                            value={form.cadre}
+                            onChange={(e) => set("cadre", e.target.value)}
+                            onFocus={() => setFocus("cadre")}
+                            onBlur={() => setFocus(null)}
+                            placeholder="Ex: Technicien"
+                        />
+                    </Field>
+                    <Field label="Mission" required error={errors.mission}>
+                        <input
+                            style={inputStyle("mission")}
+                            value={form.mission}
+                            onChange={(e) => set("mission", e.target.value)}
+                            onFocus={() => setFocus("mission")}
+                            onBlur={() => setFocus(null)}
+                            placeholder="Ex: Formation IT"
+                        />
+                    </Field>
+                </div>
+            )}
+            <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
             <Field label="Organisation" required error={errors.id_org}>
                 <select
@@ -906,7 +959,7 @@ function CadreChart({ data }) {
         <ReactApexChart
             type="bar"
             options={options}
-            series={[{ name: "Intervenants", data: values }]}
+            series={[{ name: "Bénéficiaires", data: values }]}
             height={220}
         />
     );
@@ -1186,7 +1239,7 @@ function Avatar({ nom, prenom }) {
 function DeleteModal({ intervenant, onConfirm, onCancel, loading }) {
     const t = useTheme();
     return (
-        <Modal title="Supprimer l'intervenant" onClose={onCancel} width={420}>
+        <Modal title="Supprimer le bénéficiaire" onClose={onCancel} width={420}>
             <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
                 <div
                     style={{
@@ -1378,7 +1431,7 @@ function IntervenantsInner() {
             await axios.post("/api/intervenants", form, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            showToast("Intervenant ajouté avec succès !");
+            showToast("Bénéficiaire ajouté avec succès !");
             setShowAdd(false);
             fetchAll();
         } catch (err) {
@@ -1400,7 +1453,7 @@ function IntervenantsInner() {
             await axios.put(`/api/intervenants/${editTarget.id_inter}`, form, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            showToast("Intervenant mis à jour !");
+            showToast("Bénéficiaire mis à jour !");
             setEditTarget(null);
             fetchAll();
         } catch (err) {
@@ -1421,7 +1474,7 @@ function IntervenantsInner() {
             await axios.delete(`/api/intervenants/${deleteTarget.id_inter}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            showToast("Intervenant supprimé.", "info");
+            showToast("Bénéficiaire supprimé.", "info");
             setDeleteTarget(null);
             fetchAll();
         } catch {
@@ -1469,7 +1522,7 @@ function IntervenantsInner() {
                             className="fa-solid fa-user-tie"
                             style={{ color: PRIMARY }}
                         />{" "}
-                        Intervenants
+                        Bénéficiaires
                     </h1>
                 </div>
 
@@ -1505,7 +1558,7 @@ function IntervenantsInner() {
                             fontWeight: 700,
                         }}
                     >
-                        Intervenants
+                        Bénéficiaires
                     </span>
                 </div>
 
@@ -1713,8 +1766,8 @@ function IntervenantsInner() {
                                     }}
                                 >
                                     {cinSearch
-                                        ? `Aucun intervenant avec CIN "${cinSearch}"`
-                                        : "Aucun intervenant enregistré"}
+                                        ? `Aucun bénéficiaire avec CIN "${cinSearch}"`
+                                        : "Aucun bénéficiaire enregistré"}
                                 </p>
                                 {!cinSearch && (
                                     <button
@@ -1762,7 +1815,7 @@ function IntervenantsInner() {
                                     }}
                                 >
                                     {[
-                                        "Intervenant",
+                                        "Bénéficiaire",
                                         "CIN",
                                         "Téléphone",
                                         "Ville",
@@ -2066,9 +2119,9 @@ function IntervenantsInner() {
                                 >
                                     <StatCard
                                         icon="fa-solid fa-users"
-                                        label="Total Intervenants"
+                                        label="Total Bénéficiaires"
                                         value={(() => {
-                                            if (kpiMode === "total") return stats.total;
+                                            if (kpiMode === "total") return stats.total_global;
                                             const todayStr = new Date().toISOString().split('T')[0];
                                             const monthStr = todayStr.substring(0, 7);
                                             const yearStr = todayStr.substring(0, 4);
@@ -2078,7 +2131,6 @@ function IntervenantsInner() {
                                                 return match ? Number(match.total) : 0;
                                             }
                                             if (kpiMode === "month") {
-                                                // Find all matches for the current month in monthly stats
                                                 const match = stats.monthly?.find(d => (d.month_key || d.month || "").startsWith(monthStr));
                                                 return match ? Number(match.total) : 0;
                                             }
@@ -2086,8 +2138,9 @@ function IntervenantsInner() {
                                                 const matches = stats.yearly?.filter(d => String(d.year || d.month || d.date).startsWith(yearStr));
                                                 return matches?.reduce((acc, curr) => acc + Number(curr.total), 0) || 0;
                                             }
-                                            return stats.total;
+                                            return stats.total_global;
                                         })()}
+                                        sub={kpiMode === "total" ? `${stats.sum_nbr_reel} formation | ${stats.total_hotel_seul} hôtel seul` : ""}
                                         color={PRIMARY}
                                         headerRight={
                                             <select
@@ -2278,7 +2331,7 @@ function IntervenantsInner() {
                                                     marginRight: 8,
                                                 }}
                                             />
-                                            Intervenants par Organisation
+                                            Bénéficiaires par Organisation
                                         </h3>
                                         <OrgChart data={stats.by_org} />
                                     </div>
@@ -2298,7 +2351,7 @@ function IntervenantsInner() {
             {/* -- Modals -- */}
             {showAdd && (
                 <Modal
-                    title="Ajouter un intervenant"
+                    title="Ajouter un bénéficiaire"
                     onClose={() => setShowAdd(false)}
                     width={640}
                 >
@@ -2311,7 +2364,7 @@ function IntervenantsInner() {
             )}
             {editTarget && (
                 <Modal
-                    title="Modifier l'intervenant"
+                    title="Modifier le bénéficiaire"
                     onClose={() => setEditTarget(null)}
                     width={640}
                 >

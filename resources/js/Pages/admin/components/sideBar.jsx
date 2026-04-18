@@ -12,7 +12,7 @@ const NAV_SECTIONS = [
         items: [
             { href: "/dashboard/chambres", icon: "fa-solid fa-bed", label: "Chambres" },
             { href: "/dashboard/reservations", icon: "fa-solid fa-calendar-check", label: "Reservations" },
-            { href: "/dashboard/intervenants", icon: "fa-solid fa-user-tie", label: "Intervenants" },
+            { href: "/dashboard/intervenants", icon: "fa-solid fa-user-tie", label: "Bénéficiaires" },
         ],
     },
     {

@@ -662,7 +662,7 @@ function DeleteOrgConfirm({ org, onConfirm, onClose, loading }) {
                 </p>
                 <p style={{ fontWeight: 700, color: t.text, fontSize: "1rem", margin: "0 0 16px" }}>{org.nom}</p>
                 <p style={{ fontSize: "0.78rem", color: t.textFaint }}>
-                    Impossible s’il existe des intervenants, formations ou organisations filles liés.
+                    Impossible s’il existe des bénéficiaires, formations ou organisations filles liés.
                 </p>
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
@@ -1123,7 +1123,7 @@ function OrganisationsPageInner() {
                                                 { label: "Nom", key: "nom" },
                                                 { label: "Ville", key: "ville_org" },
                                                 { label: "Type", key: "type" },
-                                                { label: "Interv.", key: "intervenants_count" },
+                                                { label: "Bénéf.", key: "intervenants_count" },
                                                 { label: "Form.", key: "formations_count" },
                                                 { label: "Créée", key: "created_at" },
                                             ].map((col) => (
@@ -1249,7 +1249,7 @@ function OrganisationsPageInner() {
                                     </select>
                                 }
                             />
-                            <StatCard icon="fa-solid fa-users" label="Intervenants" value={kpiData.intervenants} color="#8B5CF6" />
+                            <StatCard icon="fa-solid fa-users" label="Bénéficiaires" value={kpiData.intervenants} color="#8B5CF6" />
                             <StatCard icon="fa-solid fa-graduation-cap" label="Formations" value={kpiData.formations} color="#10B981" />
                             <StatCard icon="fa-solid fa-location-dot" label="Villes" value={kpiData.villes} color="#3B82F6" />
                         </div>
