@@ -171,7 +171,7 @@ function ReservationForm({ initial = {}, onSubmit, loading, options = {}, onChec
 
     const validate = () => {
         const e = {};
-        if (!form.id_inter) e.id_inter = "Intervenant requis";
+        if (!form.id_inter) e.id_inter = "Bénéficiaire requis";
         if (!form.id_chambre) e.id_chambre = "Chambre requise";
         if (!form.date_debut) e.date_debut = "Date de début requise";
         if (!form.date_fin) e.date_fin = "Date de fin requise";
@@ -253,17 +253,17 @@ function ReservationForm({ initial = {}, onSubmit, loading, options = {}, onChec
     return (
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <Field label="Intervenant principal" required error={errors.id_inter}>
+                <Field label="Bénéficiaire principal" required error={errors.id_inter}>
                     <Select
                         styles={selectStyles("id_inter")}
                         value={intervenantOptions.find(o => o.value == form.id_inter) || null}
                         onChange={(option) => set("id_inter", option ? option.value : "")}
                         options={intervenantOptions}
-                        placeholder="— Sélectionner un intervenant —"
+                        placeholder="— Sélectionner un bénéficiaire —"
                         isClearable
                     />
                 </Field>
-                <Field label="Deuxième intervenant (optionnel)">
+                <Field label="Deuxième bénéficiaire (optionnel)">
                     <Select
                         styles={selectStyles("id_inter_2")}
                         value={secondIntervenantOptions.find(o => o.value == form.id_inter_2) || null}
@@ -737,7 +737,7 @@ function ReservationsInner() {
                                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                         <thead>
                                             <tr>
-                                                {["Intervenant", "Chambre", "Dates", "Statut", "Créé par", "Actions"].map((h, i) => (
+                                                {["Bénéficiaire", "Chambre", "Dates", "Statut", "Créé par", "Actions"].map((h, i) => (
                                                     <th key={i} style={{
                                                         padding: "11px 14px", textAlign: "left", fontSize: "0.68rem", textTransform: "uppercase",
                                                         letterSpacing: "0.12em", fontWeight: 700, color: t.textMuted,

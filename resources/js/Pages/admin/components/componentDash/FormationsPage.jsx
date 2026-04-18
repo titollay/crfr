@@ -1254,7 +1254,7 @@ function IntervenantsEvolutionChart({ labels, values }) {
         tooltip: { theme: t.dark ? "dark" : "light" }
     }), [labels, t.dark, t.textMuted, t.borderSm]);
 
-    const series = [{ name: "Intervenants", data: values }];
+    const series = [{ name: "Bénéficiaires", data: values }];
 
     return (
         <div style={{ height: 260 }}>
@@ -1736,6 +1736,7 @@ function FormationsPageInner() {
                                                 { label: "Organisation", key: "organisation" },
                                                 { label: "Dates", key: "date_debut" },
                                                 { label: "Lieu", key: "lieu" },
+                                                { label: "Participants", key: "nbr_reel" },
                                                 { label: "Formateurs", key: "nb_formateurs" },
                                                 { label: "Statut", key: "statut" }
                                             ].map(col => (
@@ -1750,9 +1751,9 @@ function FormationsPageInner() {
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan={6} style={{ textAlign: "center", padding: 60, color: t.textMuted }}><i className="fa-solid fa-spinner fa-spin fa-2x" /></td></tr>
+                                            <tr><td colSpan={7} style={{ textAlign: "center", padding: 60, color: t.textMuted }}><i className="fa-solid fa-spinner fa-spin fa-2x" /></td></tr>
                                         ) : paginated.length === 0 ? (
-                                            <tr><td colSpan={6} style={{ textAlign: "center", padding: 60, color: t.textMuted }}>Aucune formation trouvée</td></tr>
+                                            <tr><td colSpan={7} style={{ textAlign: "center", padding: 60, color: t.textMuted }}>Aucune formation trouvée</td></tr>
                                         ) : paginated.map((f, idx) => (
                                             <tr key={f.id_forma} style={{ background: idx % 2 === 0 ? t.bg : (t.dark ? "rgba(255,255,255,0.02)" : "#fcfcfd"), transition: "background 0.2s" }}>
                                                 <td style={tdBase}><span style={{ fontWeight: 700, color: t.text }}>{f.sujet}</span></td>
@@ -1764,6 +1765,24 @@ function FormationsPageInner() {
                                                     </div>
                                                 </td>
                                                 <td style={tdBase}><span style={{ color: t.textMuted }}>{f.lieu}</span></td>
+                                                <td style={tdBase}>
+                                                    <span 
+                                                        style={{ 
+                                                            display: "inline-flex", 
+                                                            alignItems: "center", 
+                                                            justifyContent: "center", 
+                                                            width: 24, 
+                                                            height: 24, 
+                                                            borderRadius: "50%", 
+                                                            background: f.nbr_reel > 0 ? "rgba(16,185,129,0.12)" : t.bgAlt, 
+                                                            color: f.nbr_reel > 0 ? "#10b981" : t.textFaint,
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: 700
+                                                        }}
+                                                    >
+                                                        {f.nbr_reel || 0}
+                                                    </span>
+                                                </td>
                                                 <td style={tdBase}>
                                                     <span 
                                                         style={{ 

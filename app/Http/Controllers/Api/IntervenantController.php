@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Intervenant;
+use App\Models\Formation;
 use App\Models\Organisation;
 use Illuminate\Http\Request;
 
@@ -28,11 +29,18 @@ class IntervenantController extends Controller
             'ville'          => 'required|string|max:100',
             'id_org'         => 'required|exists:organisations,id_org',
             'date_naissance' => 'required|date|before:today',
-            'cadre'          => 'required|string|max:100',
-            'mission'        => 'required|string|max:255',
+            'cadre'          => 'nullable|string|max:100',
+            'mission'        => 'nullable|string|max:255',
             'nationalite'    => 'required|string|max:100',
             'adresse'        => 'required|string|max:500',
+            'a_formation'    => 'required|boolean',
         ]);
+
+        // Force cadre/mission to null when not in formation
+        if (!$validated['a_formation']) {
+            $validated['cadre'] = null;
+            $validated['mission'] = null;
+        }
 
         $intervenant = Intervenant::create($validated);
         $intervenant->load('organisation');
@@ -58,11 +66,18 @@ class IntervenantController extends Controller
             'ville'          => 'required|string|max:100',
             'id_org'         => 'required|exists:organisations,id_org',
             'date_naissance' => 'required|date|before:today',
-            'cadre'          => 'required|string|max:100',
-            'mission'        => 'required|string|max:255',
+            'cadre'          => 'nullable|string|max:100',
+            'mission'        => 'nullable|string|max:255',
             'nationalite'    => 'required|string|max:100',
             'adresse'        => 'required|string|max:500',
+            'a_formation'    => 'required|boolean',
         ]);
+
+        // Force cadre/mission to null when not in formation
+        if (!$validated['a_formation']) {
+            $validated['cadre'] = null;
+            $validated['mission'] = null;
+        }
 
         $intervenant->update($validated);
         $intervenant->load('organisation');
@@ -80,6 +95,17 @@ class IntervenantController extends Controller
     {
         $total = Intervenant::count();
 
+        // ── Répartition par type ──
+        $totalHotelSeul   = Intervenant::whereNull('mission')->whereNull('cadre')->count();
+        $totalFormation   = Intervenant::where(function ($query) {
+            $query->whereNotNull('mission')->orWhereNotNull('cadre');
+        })->count();
+
+        // ── Total global (impact sans doublons) ──
+        // = Σ(nbr_reel de formations) + bénéficiaires hôtel-seul
+        $sumNbrReel   = (int) Formation::sum('nbr_reel');
+        $totalGlobal  = $sumNbrReel + $totalHotelSeul;
+
         // By ville
         $byVille = Intervenant::selectRaw('ville, count(*) as total')
             ->groupBy('ville')
@@ -93,8 +119,9 @@ class IntervenantController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        // By cadre
-        $byCadre = Intervenant::selectRaw('cadre, count(*) as total')
+        // By cadre (only those with formation)
+        $byCadre = Intervenant::whereNotNull('cadre')
+            ->selectRaw('cadre, count(*) as total')
             ->groupBy('cadre')
             ->orderByDesc('total')
             ->get();
@@ -113,43 +140,68 @@ class IntervenantController extends Controller
                 ];
             });
 
-        // By mission
-        $byMission = Intervenant::selectRaw('mission, count(*) as total')
+        // By mission (only those with formation)
+        $byMission = Intervenant::whereNotNull('mission')
+            ->selectRaw('mission, count(*) as total')
             ->groupBy('mission')
             ->orderByDesc('total')
             ->limit(6)
             ->get();
 
-        // Daily registrations (last 30 days)
-        $daily = Intervenant::selectRaw("DATE(created_at) as date, count(*) as total")
+        // Daily registrations (last 30 days) — Combined HOTEL ONLY + FORMATIONS
+        $dailyHotel = Intervenant::whereNull('mission')->whereNull('cadre')
+            ->selectRaw("DATE(created_at) as date, count(*) as total")
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')
-            ->orderBy('date')
             ->get();
+        $dailyFormations = Formation::selectRaw("date_debut as date, SUM(nbr_reel) as total")
+            ->where('date_debut', '>=', now()->subDays(30))
+            ->groupBy('date_debut')
+            ->get();
+        $daily = $dailyHotel->concat($dailyFormations)->groupBy('date')->map(function ($g) {
+            return ['date' => $g->first()['date'], 'total' => $g->sum('total')];
+        })->sortBy('date')->values();
 
-        // Monthly registrations (last 12 months)
-        $monthly = Intervenant::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, count(*) as total")
+        // Monthly registrations (last 12 months) — Combined HOTEL ONLY + FORMATIONS
+        $monthlyHotel = Intervenant::whereNull('mission')->whereNull('cadre')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, count(*) as total")
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
-            ->orderBy('month')
             ->get();
+        $monthlyFormations = Formation::selectRaw("DATE_FORMAT(date_debut, '%Y-%m') as month, SUM(nbr_reel) as total")
+            ->where('date_debut', '>=', now()->subMonths(12))
+            ->groupBy('month')
+            ->get();
+        $monthly = $monthlyHotel->concat($monthlyFormations)->groupBy('month')->map(function ($g) {
+            return ['month' => $g->first()['month'], 'total' => $g->sum('total')];
+        })->sortBy('month')->values();
 
-        // Yearly registrations
-        $yearly = Intervenant::selectRaw("YEAR(created_at) as year, count(*) as total")
+        // Yearly registrations — Combined HOTEL ONLY + FORMATIONS
+        $yearlyHotel = Intervenant::whereNull('mission')->whereNull('cadre')
+            ->selectRaw("YEAR(created_at) as year, count(*) as total")
             ->groupBy('year')
-            ->orderBy('year')
             ->get();
+        $yearlyFormations = Formation::selectRaw("YEAR(date_debut) as year, SUM(nbr_reel) as total")
+            ->groupBy('year')
+            ->get();
+        $yearly = $yearlyHotel->concat($yearlyFormations)->groupBy('year')->map(function ($g) {
+            return ['year' => $g->first()['year'], 'total' => $g->sum('total')];
+        })->sortBy('year')->values();
 
         return response()->json([
-            'total'          => $total,
-            'by_ville'       => $byVille,
-            'by_nationalite' => $byNationalite,
-            'by_cadre'       => $byCadre,
-            'by_org'         => $byOrg,
-            'by_mission'     => $byMission,
-            'daily'          => $daily,
-            'monthly'        => $monthly,
-            'yearly'         => $yearly,
+            'total'            => $total,
+            'total_formation'  => $totalFormation,
+            'total_hotel_seul' => $totalHotelSeul,
+            'total_global'     => $totalGlobal,
+            'sum_nbr_reel'     => $sumNbrReel,
+            'by_ville'         => $byVille,
+            'by_nationalite'   => $byNationalite,
+            'by_cadre'         => $byCadre,
+            'by_org'           => $byOrg,
+            'by_mission'       => $byMission,
+            'daily'            => $daily,
+            'monthly'          => $monthly,
+            'yearly'           => $yearly,
         ]);
     }
 
