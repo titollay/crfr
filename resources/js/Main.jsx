@@ -26,6 +26,9 @@ function LegacyIndexRedirect() {
 const FormationsPage = lazy(() => import("./Pages/admin/components/componentDash/FormationsPage"));
 const OrganisationsPage = lazy(() => import("./Pages/admin/components/componentDash/OrganisationsPage"));
 const FormateursPage = lazy(() => import("./Pages/admin/components/componentDash/FormateursPage"));
+const UsersPage = lazy(() => import("./Pages/admin/components/componentDash/Users"));
+const RolesPage = lazy(() => import("./Pages/admin/components/componentDash/Roles"));
+const Statistics = lazy(() => import("./Pages/admin/components/componentDash/Statistics"));
 
 
 function PageLoader() {
@@ -126,6 +129,30 @@ export default function Main() {
                         element={
                             <Suspense fallback={<PageLoader />}>
                                 <FormateursPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="users"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <UsersPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="roles"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <RolesPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="statistics"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <Statistics />
                             </Suspense>
                         }
                     />
