@@ -62,4 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('formateurs', [FormateurController::class, 'store']);
     Route::put('formateurs/{id}', [FormateurController::class, 'update']);
     Route::delete('formateurs/{id}', [FormateurController::class, 'destroy']);
+
+    // Users
+    Route::apiResource('users', \App\Http\Controllers\Api\UserController::class)->parameters(['users' => 'id_user']);
 });

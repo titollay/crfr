@@ -11,16 +11,6 @@ import { Link } from "react-router-dom";
 
 const PRIMARY = "#D97706";
 
-/**
- * @typedef {{
- *   id_formateur: number;
- *   cin: string;
- *   num_location: string | null;
- *   attribut: string | null;
- *   created_at: string | null;
- * }} FormateurRow
- */
-
 function useDarkMode() {
     const [dark, setDark] = useState(() =>
         document.documentElement.classList.contains("dark"),
@@ -256,24 +246,33 @@ function Field({ label, required, children, error, hint }) {
     );
 }
 
-function formateurFormFromInitial(initial) {
-    return {
-        cin: initial.cin ?? "",
-        num_location: initial.num_location ?? "",
-        attribut: initial.attribut ?? "",
-    };
-}
-
-function FormateurForm({ initial = {}, onSubmit, loading }) {
+function UserForm({ initial = {}, onSubmit, loading }) {
     const t = useTheme();
-    const [form, setForm] = useState(() => formateurFormFromInitial(initial));
+    const isEdit = Boolean(initial.id_user);
+    
+    const [form, setForm] = useState({
+        nom: initial.nom || "",
+        prenom: initial.prenom || "",
+        email: initial.email || "",
+        role: initial.role || "user",
+        password: "",
+        password_confirmation: "",
+    });
+    
     const [errors, setErrors] = useState({});
     const [focus, setFocus] = useState(null);
 
     useEffect(() => {
-        setForm(formateurFormFromInitial(initial));
+        setForm({
+            nom: initial.nom || "",
+            prenom: initial.prenom || "",
+            email: initial.email || "",
+            role: initial.role || "user",
+            password: "",
+            password_confirmation: "",
+        });
         setErrors({});
-    }, [initial.id_formateur]);
+    }, [initial.id_user]);
 
     const set = (k, v) => {
         setForm((f) => ({ ...f, [k]: v }));
@@ -282,7 +281,16 @@ function FormateurForm({ initial = {}, onSubmit, loading }) {
 
     const validate = () => {
         const e = {};
-        if (!form.cin.trim()) e.cin = "CIN requis";
+        if (!form.nom.trim()) e.nom = "Nom requis";
+        if (!form.prenom.trim()) e.prenom = "Prénom requis";
+        if (!form.email.trim()) e.email = "Email requis";
+        else if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = "Email invalide";
+        
+        if (!isEdit && !form.password) e.password = "Mot de passe requis";
+        if (form.password && form.password !== form.password_confirmation) {
+            e.password_confirmation = "Les mots de passe ne correspondent pas";
+        }
+        
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -290,11 +298,19 @@ function FormateurForm({ initial = {}, onSubmit, loading }) {
     const handle = (ev) => {
         ev.preventDefault();
         if (!validate()) return;
-        onSubmit({
-            cin: form.cin.trim(),
-            num_location: form.num_location.trim() || null,
-            attribut: form.attribut.trim() || null,
-        });
+        
+        const payload = {
+            nom: form.nom.trim(),
+            prenom: form.prenom.trim(),
+            email: form.email.trim(),
+            role: form.role,
+        };
+        
+        if (form.password) {
+            payload.password = form.password;
+        }
+        
+        onSubmit(payload);
     };
 
     const inputStyle = (k) => ({
@@ -312,42 +328,80 @@ function FormateurForm({ initial = {}, onSubmit, loading }) {
         boxShadow: focus === k && !errors[k] ? "0 0 0 3px rgba(217,119,6,0.15)" : "none",
     });
 
-    const isEdit = Boolean(initial.id_formateur);
-
     return (
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Field label="CIN (Numéro de carte)" required error={errors.cin}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Field label="Nom" required error={errors.nom}>
+                    <input
+                        style={inputStyle("nom")}
+                        value={form.nom}
+                        onChange={(e) => set("nom", e.target.value)}
+                        onFocus={() => setFocus("nom")}
+                        onBlur={() => setFocus(null)}
+                        placeholder="Ex. Dupont"
+                    />
+                </Field>
+                <Field label="Prénom" required error={errors.prenom}>
+                    <input
+                        style={inputStyle("prenom")}
+                        value={form.prenom}
+                        onChange={(e) => set("prenom", e.target.value)}
+                        onFocus={() => setFocus("prenom")}
+                        onBlur={() => setFocus(null)}
+                        placeholder="Ex. Jean"
+                    />
+                </Field>
+            </div>
+
+            <Field label="Email" required error={errors.email}>
                 <input
-                    style={inputStyle("cin")}
-                    value={form.cin}
-                    onChange={(e) => set("cin", e.target.value)}
-                    onFocus={() => setFocus("cin")}
+                    type="email"
+                    style={inputStyle("email")}
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    onFocus={() => setFocus("email")}
                     onBlur={() => setFocus(null)}
-                    placeholder="Ex. AB123456"
+                    placeholder="Ex. jean.dupont@mail.com"
                 />
+            </Field>
+            
+            <Field label="Rôle" error={errors.role}>
+                <select
+                    style={{ ...inputStyle("role"), appearance: "none", cursor: "pointer" }}
+                    value={form.role}
+                    onChange={(e) => set("role", e.target.value)}
+                    onFocus={() => setFocus("role")}
+                    onBlur={() => setFocus(null)}
+                >
+                    <option value="user">Utilisateur (User)</option>
+                    <option value="admin">Administrateur (Admin)</option>
+                </select>
             </Field>
 
-            <Field label="Numéro de location">
-                <input
-                    style={inputStyle("num_location")}
-                    value={form.num_location}
-                    onChange={(e) => set("num_location", e.target.value)}
-                    onFocus={() => setFocus("num_location")}
-                    onBlur={() => setFocus(null)}
-                    placeholder="Ex. Loc-001"
-                />
-            </Field>
-
-            <Field label="Attribut">
-                <input
-                    style={inputStyle("attribut")}
-                    value={form.attribut}
-                    onChange={(e) => set("attribut", e.target.value)}
-                    onFocus={() => setFocus("attribut")}
-                    onBlur={() => setFocus(null)}
-                    placeholder="Informations complémentaires..."
-                />
-            </Field>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Field label="Mot de passe" required={!isEdit} error={errors.password} hint={isEdit ? "Laissez vide pour ne pas modifier" : ""}>
+                    <input
+                        type="password"
+                        style={inputStyle("password")}
+                        value={form.password}
+                        onChange={(e) => set("password", e.target.value)}
+                        onFocus={() => setFocus("password")}
+                        onBlur={() => setFocus(null)}
+                        placeholder="••••••••"
+                    />
+                </Field>
+                <Field label="Confirmer mot de passe" required={!isEdit || !!form.password} error={errors.password_confirmation}>
+                    <input
+                        type="password"
+                        style={inputStyle("password_confirmation")}
+                        value={form.password_confirmation}
+                        onChange={(e) => set("password_confirmation", e.target.value)}
+                        onFocus={() => setFocus("password_confirmation")}
+                        onBlur={() => setFocus(null)}
+                        placeholder="••••••••"
+                    />
+                </Field>
+            </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
                 <button
@@ -377,7 +431,7 @@ function FormateurForm({ initial = {}, onSubmit, loading }) {
                     ) : (
                         <>
                             <i className={`fa-solid ${isEdit ? "fa-floppy-disk" : "fa-user-plus"}`} />
-                            {isEdit ? "Mettre à jour" : "Ajouter le formateur"}
+                            {isEdit ? "Mettre à jour" : "Ajouter l'utilisateur"}
                         </>
                     )}
                 </button>
@@ -386,10 +440,10 @@ function FormateurForm({ initial = {}, onSubmit, loading }) {
     );
 }
 
-function DeleteConfirm({ formateur, onConfirm, onClose, loading }) {
+function DeleteConfirm({ user, onConfirm, onClose, loading }) {
     const t = useTheme();
     return (
-        <Modal title="Supprimer le formateur" onClose={onClose} width={420}>
+        <Modal title="Supprimer l'utilisateur" onClose={onClose} width={420}>
             <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
                 <div
                     style={{
@@ -406,9 +460,9 @@ function DeleteConfirm({ formateur, onConfirm, onClose, loading }) {
                     <i className="fa-solid fa-triangle-exclamation" style={{ color: "#ef4444", fontSize: 22 }} />
                 </div>
                 <p style={{ fontSize: "0.9rem", color: t.textSub, marginBottom: 8 }}>
-                    Voulez-vous vraiment supprimer
+                    Voulez-vous vraiment supprimer cet utilisateur ?
                 </p>
-                <p style={{ fontWeight: 700, color: t.text, fontSize: "1rem", margin: "0 0 16px" }}>{formateur.cin}</p>
+                <p style={{ fontWeight: 700, color: t.text, fontSize: "1rem", margin: "0 0 16px" }}>{user.nom} {user.prenom}</p>
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
                 <button
@@ -471,7 +525,7 @@ function actionBtnStyle(t, variant) {
     };
 }
 
-export default function FormateursPage() {
+export default function Users() {
     const dark = useDarkMode();
     const t = useTheme();
 
@@ -494,7 +548,7 @@ export default function FormateursPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.get("/api/formateurs", {
+            const res = await axios.get("/api/users", {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setData(Array.isArray(res.data) ? res.data : []);
@@ -514,10 +568,10 @@ export default function FormateursPage() {
         setFormLoading(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.post("/api/formateurs", payload, {
+            await axios.post("/api/users", payload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setToast({ msg: "Formateur ajouté avec succès", type: "success" });
+            setToast({ msg: "Utilisateur ajouté avec succès", type: "success" });
             setShowAdd(false);
             fetchData();
         } catch (err) {
@@ -532,10 +586,10 @@ export default function FormateursPage() {
         setFormLoading(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`/api/formateurs/${editing.id_formateur}`, payload, {
+            await axios.put(`/api/users/${editing.id_user}`, payload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setToast({ msg: "Formateur mis à jour", type: "success" });
+            setToast({ msg: "Utilisateur mis à jour", type: "success" });
             setEditing(null);
             fetchData();
         } catch (err) {
@@ -550,10 +604,10 @@ export default function FormateursPage() {
         setFormLoading(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`/api/formateurs/${deleting.id_formateur}`, {
+            await axios.delete(`/api/users/${deleting.id_user}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            setToast({ msg: "Formateur supprimé", type: "success" });
+            setToast({ msg: "Utilisateur supprimé", type: "success" });
             setDeleting(null);
             fetchData();
         } catch (err) {
@@ -569,9 +623,10 @@ export default function FormateursPage() {
         if (!q) return data;
         return data.filter(
             (r) =>
-                r.cin.toLowerCase().includes(q) ||
-                (r.num_location && r.num_location.toLowerCase().includes(q)) ||
-                (r.attribut && r.attribut.toLowerCase().includes(q)),
+                r.nom.toLowerCase().includes(q) ||
+                r.prenom.toLowerCase().includes(q) ||
+                r.email.toLowerCase().includes(q) ||
+                (r.role && r.role.toLowerCase().includes(q)),
         );
     }, [data, search]);
 
@@ -586,14 +641,14 @@ export default function FormateursPage() {
                 <div style={{ borderBottom: `1px solid ${t.border}`, padding: "20px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
                     <div style={{ flex: 1 }}>
                         <h1 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: t.text, display: "flex", alignItems: "center", gap: 10 }}>
-                            <i className="fa-solid fa-chalkboard-user" style={{ color: PRIMARY }} /> Formateurs
+                            <i className="fa-solid fa-users-gear" style={{ color: PRIMARY }} /> Utilisateurs
                         </h1>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", background: t.bgInput, borderRadius: 20, border: `1px solid ${t.borderMd}` }}>
                         <Link to="/dashboard" style={{ fontSize: "0.75rem", color: t.textSub, textDecoration: "none" }}>Dashboard</Link>
                         <i className="fa-solid fa-chevron-right" style={{ fontSize: 9, color: t.textFaint }} />
-                        <span style={{ fontSize: "0.75rem", color: t.text, fontWeight: 700 }}>Formateurs</span>
+                        <span style={{ fontSize: "0.75rem", color: t.text, fontWeight: 700 }}>Utilisateurs</span>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, justifyContent: "flex-end" }}>
@@ -607,212 +662,203 @@ export default function FormateursPage() {
                 </div>
 
                 <div style={{ padding: "24px 28px" }}>
-
-                {/* ── Main Table Card ── */}
-                <SectionCard
-                    title="Liste des Formateurs"
-                    theme={t}
-                    headerRight={
-                        <div style={{ position: "relative" }}>
-                            <i
-                                className="fa-solid fa-magnifying-glass"
-                                style={{
-                                    position: "absolute",
-                                    left: 12,
-                                    top: "50%",
-                                    transform: "translateY(-50%)",
-                                    fontSize: 12,
-                                    color: t.textFaint,
-                                }}
-                            />
-                            <input
-                                placeholder="Rechercher (CIN, location...)"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                style={{
-                                    background: t.bgAlt,
-                                    border: `1px solid ${t.border}`,
-                                    borderRadius: 8,
-                                    padding: "7px 12px 7px 32px",
-                                    fontSize: "0.82rem",
-                                    width: 240,
-                                    color: t.text,
-                                    outline: "none",
-                                }}
-                            />
-                        </div>
-                    }
-                >
-                    {loading ? (
-                        <div style={{ padding: "40px 0", textAlign: "center" }}>
-                            <i className="fa-solid fa-spinner fa-spin" style={{ color: PRIMARY, fontSize: 24 }} />
-                            <p style={{ marginTop: 12, color: t.textMuted, fontSize: "0.9rem" }}>Chargement...</p>
-                        </div>
-                    ) : filtered.length === 0 ? (
-                        <div style={{ padding: "60px 0", textAlign: "center" }}>
-                            <div
-                                style={{
-                                    width: 64,
-                                    height: 64,
-                                    borderRadius: "50%",
-                                    background: t.bgAlt,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    margin: "0 auto 16px",
-                                }}
-                            >
-                                <i className="fa-solid fa-inbox" style={{ fontSize: 24, color: t.textFaint }} />
+                    {/* ── Main Table Card ── */}
+                    <SectionCard
+                        title="Liste des Utilisateurs"
+                        theme={t}
+                        headerRight={
+                            <div style={{ position: "relative" }}>
+                                <i
+                                    className="fa-solid fa-magnifying-glass"
+                                    style={{
+                                        position: "absolute",
+                                        left: 12,
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        fontSize: 12,
+                                        color: t.textFaint,
+                                    }}
+                                />
+                                <input
+                                    placeholder="Rechercher (Nom, Email...)"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    style={{
+                                        background: t.bgAlt,
+                                        border: `1px solid ${t.border}`,
+                                        borderRadius: 8,
+                                        padding: "7px 12px 7px 32px",
+                                        fontSize: "0.82rem",
+                                        width: 240,
+                                        color: t.text,
+                                        outline: "none",
+                                    }}
+                                />
                             </div>
-                            <p style={{ fontWeight: 600, color: t.textSub, margin: 0 }}>Aucun formateur trouvé</p>
-                            <p style={{ fontSize: "0.8rem", color: t.textMuted, marginTop: 4 }}>
-                                {search ? "Essayez d'autres mots-clés." : "Commencez par en ajouter un."}
-                            </p>
-                        </div>
-                    ) : (
-                        <div style={{ overflowX: "auto" }}>
-                            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-                                <thead>
-                                    <tr style={{ borderBottom: `2px solid ${t.borderSm}` }}>
-                                        <th style={thStyle(t)}>ID</th>
-                                        <th style={thStyle(t)}>CIN</th>
-                                        <th style={thStyle(t)}>Num Location</th>
-                                        <th style={thStyle(t)}>Attribut</th>
-                                        <th style={{ ...thStyle(t), textAlign: "right" }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {paginated.map((r) => (
-                                        <tr
-                                            key={r.id_formateur}
-                                            style={{
-                                                borderBottom: `1px solid ${t.borderSm}`,
-                                                transition: "background 0.15s",
-                                            }}
-                                            onMouseEnter={(e) => (e.currentTarget.style.background = t.bgHover)}
-                                            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                                        >
-                                            <td style={tdStyle(t)}>
-                                                <span style={{ fontWeight: 700, color: PRIMARY }}>#{r.id_formateur}</span>
-                                            </td>
-                                            <td style={tdStyle(t)}>
-                                                <div style={{ fontWeight: 600, color: t.text }}>{r.cin}</div>
-                                            </td>
-                                            <td style={tdStyle(t)}>
-                                                {r.num_location ? (
-                                                    <span style={{ color: t.text }}>{r.num_location}</span>
-                                                ) : (
-                                                    <span style={{ color: t.textFaint, fontStyle: "italic" }}>—</span>
-                                                )}
-                                            </td>
-                                            <td style={tdStyle(t)}>
-                                                {r.attribut ? (
-                                                    <div
-                                                        style={{
-                                                            fontSize: "0.8rem",
-                                                            color: t.textSub,
-                                                            maxWidth: 200,
-                                                            whiteSpace: "nowrap",
-                                                            overflow: "hidden",
-                                                            textOverflow: "ellipsis",
-                                                        }}
-                                                        title={r.attribut}
-                                                    >
-                                                        {r.attribut}
-                                                    </div>
-                                                ) : (
-                                                    <span style={{ color: t.textFaint }}>—</span>
-                                                )}
-                                            </td>
-                                            <td style={{ ...tdStyle(t), textAlign: "right" }}>
-                                                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                                    <button
-                                                        onClick={() => setEditing(r)}
-                                                        style={actionBtnStyle(t, "edit")}
-                                                        title="Modifier"
-                                                    >
-                                                        <i className="fa-solid fa-pen-to-square" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setDeleting(r)}
-                                                        style={actionBtnStyle(t, "delete")}
-                                                        title="Supprimer"
-                                                    >
-                                                        <i className="fa-solid fa-trash" />
-                                                    </button>
-                                                </div>
-                                            </td>
+                        }
+                    >
+                        {loading ? (
+                            <div style={{ padding: "40px 0", textAlign: "center" }}>
+                                <i className="fa-solid fa-spinner fa-spin" style={{ color: PRIMARY, fontSize: 24 }} />
+                                <p style={{ marginTop: 12, color: t.textMuted, fontSize: "0.9rem" }}>Chargement...</p>
+                            </div>
+                        ) : filtered.length === 0 ? (
+                            <div style={{ padding: "60px 0", textAlign: "center" }}>
+                                <div
+                                    style={{
+                                        width: 64,
+                                        height: 64,
+                                        borderRadius: "50%",
+                                        background: t.bgAlt,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        margin: "0 auto 16px",
+                                    }}
+                                >
+                                    <i className="fa-solid fa-inbox" style={{ fontSize: 24, color: t.textFaint }} />
+                                </div>
+                                <p style={{ fontWeight: 600, color: t.textSub, margin: 0 }}>Aucun utilisateur trouvé</p>
+                                <p style={{ fontSize: "0.8rem", color: t.textMuted, marginTop: 4 }}>
+                                    {search ? "Essayez d'autres mots-clés." : "Commencez par en ajouter un."}
+                                </p>
+                            </div>
+                        ) : (
+                            <div style={{ overflowX: "auto" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: `2px solid ${t.borderSm}` }}>
+                                            <th style={thStyle(t)}>ID</th>
+                                            <th style={thStyle(t)}>Prénom & Nom</th>
+                                            <th style={thStyle(t)}>Email</th>
+                                            <th style={thStyle(t)}>Rôle</th>
+                                            <th style={{ ...thStyle(t), textAlign: "right" }}>Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {/* Pagination Controls */}
-                    {!loading && filtered.length > 0 && (
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${t.borderSm}`, background: t.dark ? "rgba(255,255,255,0.01)" : "#fafbff" }}>
-                            <span style={{ fontSize: "0.75rem", color: t.textMuted }}>
-                                Affichage de {(page - 1) * itemsPerPage + 1} à {Math.min(page * itemsPerPage, filtered.length)} sur {filtered.length} résultats
-                            </span>
-                            <div style={{ display: "flex", gap: 8 }}>
-                                <button
-                                    disabled={page === 1}
-                                    onClick={() => setPage(p => p - 1)}
-                                    style={{
-                                        padding: "4px 10px",
-                                        borderRadius: 6,
-                                        border: `1px solid ${t.borderMd}`,
-                                        background: page === 1 ? "transparent" : t.bgInput,
-                                        color: page === 1 ? t.textFaint : t.text,
-                                        cursor: page === 1 ? "default" : "pointer",
-                                    }}
-                                >
-                                    <i className="fa-solid fa-chevron-left" />
-                                </button>
-                                <button
-                                    disabled={page === totalPages || totalPages === 0}
-                                    onClick={() => setPage(p => p + 1)}
-                                    style={{
-                                        padding: "4px 10px",
-                                        borderRadius: 6,
-                                        border: `1px solid ${t.borderMd}`,
-                                        background: page === totalPages || totalPages === 0 ? "transparent" : t.bgInput,
-                                        color: page === totalPages || totalPages === 0 ? t.textFaint : t.text,
-                                        cursor: page === totalPages || totalPages === 0 ? "default" : "pointer",
-                                    }}
-                                >
-                                    <i className="fa-solid fa-chevron-right" />
-                                </button>
+                                    </thead>
+                                    <tbody>
+                                        {paginated.map((r) => (
+                                            <tr
+                                                key={r.id_user}
+                                                style={{
+                                                    borderBottom: `1px solid ${t.borderSm}`,
+                                                    transition: "background 0.15s",
+                                                }}
+                                                onMouseEnter={(e) => (e.currentTarget.style.background = t.bgHover)}
+                                                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                                            >
+                                                <td style={tdStyle(t)}>
+                                                    <span style={{ fontWeight: 700, color: PRIMARY }}>#{r.id_user}</span>
+                                                </td>
+                                                <td style={tdStyle(t)}>
+                                                    <div style={{ fontWeight: 600, color: t.text }}>{r.prenom} {r.nom}</div>
+                                                </td>
+                                                <td style={tdStyle(t)}>
+                                                    <div style={{ color: t.text }}>{r.email}</div>
+                                                </td>
+                                                <td style={tdStyle(t)}>
+                                                    <span
+                                                        style={{
+                                                            background: r.role === "admin" ? "rgba(217,119,6,0.15)" : t.bgAlt,
+                                                            color: r.role === "admin" ? PRIMARY : t.textSub,
+                                                            padding: "4px 8px",
+                                                            borderRadius: 6,
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: 700,
+                                                            border: `1px solid ${t.borderMd}`
+                                                        }}
+                                                    >
+                                                        {r.role ? r.role.toUpperCase() : "USER"}
+                                                    </span>
+                                                </td>
+                                                <td style={{ ...tdStyle(t), textAlign: "right" }}>
+                                                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                                        <button
+                                                            onClick={() => setEditing(r)}
+                                                            style={actionBtnStyle(t, "edit")}
+                                                            title="Modifier"
+                                                        >
+                                                            <i className="fa-solid fa-pen-to-square" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDeleting(r)}
+                                                            style={actionBtnStyle(t, "delete")}
+                                                            title="Supprimer"
+                                                        >
+                                                            <i className="fa-solid fa-trash" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
+                        )}
+
+                        {/* Pagination Controls */}
+                        {!loading && filtered.length > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderTop: `1px solid ${t.borderSm}`, background: t.dark ? "rgba(255,255,255,0.01)" : "#fafbff" }}>
+                                <span style={{ fontSize: "0.75rem", color: t.textMuted }}>
+                                    Affichage de {(page - 1) * itemsPerPage + 1} à {Math.min(page * itemsPerPage, filtered.length)} sur {filtered.length} résultats
+                                </span>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    <button
+                                        disabled={page === 1}
+                                        onClick={() => setPage(p => p - 1)}
+                                        style={{
+                                            padding: "4px 10px",
+                                            borderRadius: 6,
+                                            border: `1px solid ${t.borderMd}`,
+                                            background: page === 1 ? "transparent" : t.bgInput,
+                                            color: page === 1 ? t.textFaint : t.text,
+                                            cursor: page === 1 ? "default" : "pointer",
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-chevron-left" />
+                                    </button>
+                                    <button
+                                        disabled={page === totalPages || totalPages === 0}
+                                        onClick={() => setPage(p => p + 1)}
+                                        style={{
+                                            padding: "4px 10px",
+                                            borderRadius: 6,
+                                            border: `1px solid ${t.borderMd}`,
+                                            background: page === totalPages || totalPages === 0 ? "transparent" : t.bgInput,
+                                            color: page === totalPages || totalPages === 0 ? t.textFaint : t.text,
+                                            cursor: page === totalPages || totalPages === 0 ? "default" : "pointer",
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-chevron-right" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </SectionCard>
+
+                    {/* ── Modals ── */}
+                    {showAdd && (
+                        <Modal title="Nouvel Utilisateur" onClose={() => setShowAdd(false)}>
+                            <UserForm onSubmit={handleAdd} loading={formLoading} />
+                        </Modal>
                     )}
-                </SectionCard>
 
-                {/* ── Modals ── */}
-                {showAdd && (
-                    <Modal title="Nouveau Formateur" onClose={() => setShowAdd(false)}>
-                        <FormateurForm onSubmit={handleAdd} loading={formLoading} />
-                    </Modal>
-                )}
+                    {editing && (
+                        <Modal title="Modifier l'utilisateur" onClose={() => setEditing(null)}>
+                            <UserForm initial={editing} onSubmit={handleUpdate} loading={formLoading} />
+                        </Modal>
+                    )}
 
-                {editing && (
-                    <Modal title="Modifier le formateur" onClose={() => setEditing(null)}>
-                        <FormateurForm initial={editing} onSubmit={handleUpdate} loading={formLoading} />
-                    </Modal>
-                )}
+                    {deleting && (
+                        <DeleteConfirm
+                            user={deleting}
+                            onConfirm={handleDelete}
+                            onClose={() => setDeleting(null)}
+                            loading={formLoading}
+                        />
+                    )}
 
-                {deleting && (
-                    <DeleteConfirm
-                        formateur={deleting}
-                        onConfirm={handleDelete}
-                        onClose={() => setDeleting(null)}
-                        loading={formLoading}
-                    />
-                )}
-
-                {/* ── Toast ── */}
-                {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+                    {/* ── Toast ── */}
+                    {toast && <Toast {...toast} onClose={() => setToast(null)} />}
                 </div>
             </div>
         </DM.Provider>
