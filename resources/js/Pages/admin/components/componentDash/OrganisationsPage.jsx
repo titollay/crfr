@@ -10,7 +10,7 @@ import axios from "axios";
 import ReactApexChart from "react-apexcharts";
 import { Link } from "react-router-dom";
 
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 
 const TYPE_SUGGESTIONS = [
     "Entreprise",
@@ -63,7 +63,7 @@ function useTheme() {
         bgPage: dark ? "#0a0a0a" : "#F4F6FA",
         bgAlt: dark ? "#1a1a1a" : "#f9fafb",
         bgAlt2: dark ? "#161616" : "#fafafa",
-        bgHover: dark ? "rgba(217,119,6,0.12)" : "#fff7ed",
+        bgHover: dark ? "color-mix(in srgb, var(--admin-primary), transparent 88%)" : "color-mix(in srgb, var(--admin-primary), white 95%)",
         bgInput: dark ? "rgba(255,255,255,0.05)" : "#fff",
         bgTag: dark ? "rgba(255,255,255,0.07)" : "#f3f4f6",
         border: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",

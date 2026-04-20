@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Dropdown({ trigger, children }) {
     const [open, setOpen] = useState(false);
@@ -53,16 +53,28 @@ const LANGS = [
 export default function TopBar({ user, collapsed, setCollapsed }) {
     const [lang, setLang] = useState("en");
     const [fullscreen, setFullscreen] = useState(false);
-    const [darkMode, setDarkMode] = useState(false);
+    const [darkMode, setDarkMode] = useState(() =>
+        document.documentElement.classList.contains("dark")
+    );
     const navigate = useNavigate();
 
-    // Primary brand colour (amber-600)
-    const PRIMARY = "#D97706";
+    // Sync state with global "dark" class
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setDarkMode(document.documentElement.classList.contains("dark"));
+        });
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class"],
+        });
+        return () => observer.disconnect();
+    }, []);
+
+    // Primary brand colour
+    const PRIMARY = "var(--admin-primary, #D97706)";
     // ✅ إصلاح: handleColor كاملة داخل الـ component
     const handleColor = () => {
-        const next = !darkMode;
-        setDarkMode(next);
-        document.documentElement.classList.toggle("dark", next);
+        document.documentElement.classList.toggle("dark");
     };
 
     const toggleFullscreen = () => {
@@ -75,7 +87,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
         }
     };
 
-    const iconBtn = `flex items-center justify-center w-9 h-9 rounded-lg hover:text-amber-600 transition-all duration-200 cursor-pointer ${
+    const iconBtn = `flex items-center justify-center w-9 h-9 rounded-lg hover-text-primary transition-all duration-200 cursor-pointer ${
         darkMode
             ? "text-gray-400 hover:bg-white/5"
             : "text-gray-500 hover:bg-black/5"
@@ -105,11 +117,20 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                     : "1px solid rgba(0,0,0,0.1)",
             }}
         >
+            <style>{`
+                [data-sidebar-type="horizontal"] .sb-toggle-btn {
+                    display: none !important;
+                }
+                .text-primary { color: var(--admin-primary) !important; }
+                .bg-primary { background: var(--admin-primary) !important; }
+                .hover-text-primary:hover { color: var(--admin-primary) !important; }
+                .bg-primary-light { background: color-mix(in srgb, var(--admin-primary), transparent 90%) !important; }
+            `}</style>
             {/* LEFT */}
             <div className="flex items-center gap-3 flex-shrink-0">
                 <button
                     onClick={() => setCollapsed(!collapsed)}
-                    className={`w-9 h-9 flex items-center justify-center rounded-lg hover:text-amber-600 transition-all duration-200 cursor-pointer ${
+                    className={`sb-toggle-btn w-9 h-9 flex items-center justify-center rounded-lg hover-text-primary transition-all duration-200 cursor-pointer ${
                         darkMode
                             ? "text-gray-400 hover:bg-white/5"
                             : "text-gray-500 hover:bg-black/5"
@@ -177,7 +198,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                     <i
                         className={`text-sm ${
                             darkMode
-                                ? "fa-solid fa-sun text-amber-500"
+                                ? "fa-solid fa-sun text-primary"
                                 : "fa-regular fa-moon"
                         }`}
                     ></i>
@@ -215,7 +236,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                         </div>
                         {NOTIFICATIONS.map((n, i) => (
                             <div key={i} className={dropItem}>
-                                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
                                     <i
                                         className={`${n.icon} text-xs`}
                                         style={{ color: PRIMARY }}
@@ -242,7 +263,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                             </div>
                         ))}
                         <div className="px-4 py-3 ">
-                            <button className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs uppercase tracking-widest transition-colors">
+                            <button className="w-full py-2 bg-primary hover:opacity-90 text-white text-xs uppercase tracking-widest transition-colors">
                                 Check all notifications
                             </button>
                         </div>
@@ -259,7 +280,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                 >
                     <div className={dropMenu} style={{ minWidth: 300 }}>
                         <div className={dropHdr}>
-                            <i className="fa-regular fa-message text-amber-500 text-sm"></i>
+                            <i className="fa-regular fa-message text-primary text-sm"></i>
                             <h6
                                 className={`text-sm font-medium ${
                                     darkMode ? "text-white/80" : "text-black/80"
@@ -270,7 +291,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                         </div>
                         {MESSAGES.map((m, i) => (
                             <div key={i} className={dropItem}>
-                                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-700 text-xs font-bold">
+                                <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0 text-primary text-xs font-bold">
                                     {m.name[0]}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -334,7 +355,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                                 key={l.code}
                                 onClick={() => setLang(l.code)}
                                 className={`${dropItem} ${
-                                    lang === l.code ? "bg-amber-50" : ""
+                                    lang === l.code ? "bg-primary-light" : ""
                                 }`}
                             >
                                 <span className="text-base">{l.flag}</span>
@@ -359,7 +380,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                                     </span>
                                 )}
                                 {lang === l.code && (
-                                    <i className="fa-solid fa-check text-amber-500 text-xs ml-auto"></i>
+                                    <i className="fa-solid fa-check text-primary text-xs ml-auto"></i>
                                 )}
                             </div>
                         ))}
@@ -382,8 +403,16 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                                     : "hover:bg-black/5"
                             }`}
                         >
-                            <div className="w-7 h-7 bg-amber-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                {user?.first_name?.[0]?.toUpperCase() || "A"}
+                            <div className="w-7 h-7 bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden" style={{ borderRadius: 6 }}>
+                                {user?.photo ? (
+                                    <img 
+                                        src={user.photo.startsWith('http') ? user.photo : `http://localhost:8000${user.photo}`} 
+                                        className="w-full h-full object-cover" 
+                                        alt="" 
+                                    />
+                                ) : (
+                                    user?.prenom?.[0]?.toUpperCase() || "A"
+                                )}
                             </div>
                             <div className="hidden sm:block leading-tight">
                                 <p
@@ -393,9 +422,9 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                                             : "text-black/70"
                                     }`}
                                 >
-                                    {user?.first_name} {user?.last_name}
+                                    {user?.prenom} {user?.nom}
                                 </p>
-                                <p className="text-[0.55rem] text-amber-600 uppercase tracking-wider">
+                                <p className="text-[0.55rem] text-primary uppercase tracking-wider font-semibold">
                                     {user?.role || "admin"}
                                 </p>
                             </div>
@@ -420,7 +449,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                                     darkMode ? "text-white/80" : "text-black/80"
                                 }`}
                             >
-                                {user?.first_name} {user?.last_name}
+                                {user?.prenom} {user?.nom}
                             </p>
                             <p
                                 className={`text-xs mt-0.5 ${
@@ -434,7 +463,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                             {
                                 icon: "fa-solid fa-user",
                                 label: "Account",
-                                href: "#",
+                                href: "/dashboard/profile",
                             },
                             {
                                 icon: "fa-regular fa-envelope",
@@ -444,12 +473,12 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                             {
                                 icon: "fa-solid fa-gear",
                                 label: "Settings",
-                                href: "#",
+                                href: "/dashboard/settings",
                             },
                         ].map((item) => (
-                            <a
+                            <Link
                                 key={item.label}
-                                href={item.href}
+                                to={item.href}
                                 className={`${dropItem} no-underline`}
                             >
                                 <i
@@ -468,7 +497,7 @@ export default function TopBar({ user, collapsed, setCollapsed }) {
                                 >
                                     {item.label}
                                 </span>
-                            </a>
+                            </Link>
                         ))}
                         <div
                             className={`border-t ${

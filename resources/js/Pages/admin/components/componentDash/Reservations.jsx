@@ -25,7 +25,7 @@ import {
 import { Link } from "react-router-dom";
 import ReactApexChart from "react-apexcharts";
 
-const RES_CHART_PRIMARY = "#D97706";
+const RES_CHART_PRIMARY = "var(--admin-primary, #D97706)";
 const RES_CHART_SUCCESS = "#10b981";
 const RES_CHART_INFO = "#3b82f6";
 const RES_CHART_DANGER = "#ef4444";
@@ -46,7 +46,7 @@ function rechartsSurface(dark) {
     };
 }
 
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 
 function useDarkMode() {
     const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
@@ -60,8 +60,9 @@ function useDarkMode() {
 
 const DM = createContext(false);
 
-function useTheme() {
-    const dark = useContext(DM);
+function useTheme(overrideDark) {
+    const contextDark = useContext(DM);
+    const dark = overrideDark !== undefined ? overrideDark : contextDark;
     return {
         dark,
         bg: dark ? "#111" : "#fff",
@@ -398,6 +399,33 @@ function DeleteConfirm({ reservation, onConfirm, onCancel, loading }) {
     );
 }
 
+function PrintListModal({ onConfirm, onClose }) {
+    const t = useTheme();
+    const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+    return (
+        <Modal title="Imprimer la liste des bénéficiaires" onClose={onClose} width={400}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <label style={{ fontSize: "0.85rem", color: t.textSub, fontWeight: 600 }}>Sélectionnez une date</label>
+                <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    style={{
+                        background: t.bgInput, color: t.text, border: `1px solid ${t.borderMd}`,
+                        borderRadius: 8, padding: "10px 14px", fontSize: "0.9rem", outline: "none"
+                    }}
+                />
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 10 }}>
+                    <button onClick={onClose} style={{ padding: "8px 16px", background: "transparent", color: t.textSub, border: `1px solid ${t.border}`, borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
+                    <button onClick={() => onConfirm(date)} style={{ padding: "8px 16px", background: PRIMARY, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontWeight: 700 }}>
+                        <i className="fa-solid fa-print" /> Imprimer
+                    </button>
+                </div>
+            </div>
+        </Modal>
+    );
+}
+
 function Chip({ label, color }) {
     return (
         <span style={{
@@ -557,7 +585,8 @@ export default function Reservations() {
 }
 
 function ReservationsInner() {
-    const t = useTheme();
+    const dark = useDarkMode();
+    const t = useTheme(dark);
     const [reservations, setReservations] = useState([]);
     const [options, setOptions] = useState({ chambres: [], intervenants: [] });
     const [stats, setStats] = useState(null);
@@ -643,6 +672,111 @@ function ReservationsInner() {
         }
     };
 
+    const handlePrintPaper = (res) => {
+        const frame = document.createElement("iframe");
+        frame.style.display = "none";
+        document.body.appendChild(frame);
+        const doc = frame.contentWindow.document;
+        doc.write(`
+            <html>
+            <head>
+                <title>Fiche de Réservation</title>
+                <style>
+                    body { font-family: sans-serif; padding: 40px; color: #111; }
+                    .header { text-align: center; border-bottom: 2px solid #111; padding-bottom: 20px; margin-bottom: 30px; }
+                    .row { margin-bottom: 15px; font-size: 1.1rem; }
+                    .row strong { display: inline-block; width: 180px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>FICHE DE RÉSERVATION</h2>
+                    <p>Centre de Réservation et Formation</p>
+                </div>
+                <div class="row"><strong>N° Réservation:</strong> ${res.id_resev}</div>
+                <div class="row"><strong>Bénéficiaire:</strong> ${res.intervenant?.prenom} ${res.intervenant?.nom} (CIN: ${res.intervenant?.cin || "N/A"})</div>
+                ${res.intervenant2 ? "<div class='row'><strong>Accompagnant:</strong> " + res.intervenant2.prenom + " " + res.intervenant2.nom + " (CIN: " + (res.intervenant2.cin || "N/A") + ")</div>" : ""}
+                <div class="row"><strong>Chambre:</strong> ${res.chambre?.num_chambre || "N/A"} (${res.chambre?.type_chambre || ""})</div>
+                <div class="row"><strong>Du:</strong> ${res.date_debut?.split("-").reverse().join("/")}</div>
+                <div class="row"><strong>Au:</strong> ${res.date_fin?.split("-").reverse().join("/")}</div>
+                <div class="row"><strong>Statut:</strong> ${res.statut}</div>
+                
+                <div style="margin-top: 60px; text-align: right;">
+                    <p>Signature & Cachet</p>
+                </div>
+            </body>
+            </html>
+        `);
+        doc.close();
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        setTimeout(() => document.body.removeChild(frame), 1000);
+    };
+
+    const handlePrintList = (date) => {
+        const targetDate = new Date(date);
+        const list = reservations.filter(r => {
+            const start = new Date(r.date_debut);
+            const end = new Date(r.date_fin);
+            return start <= targetDate && end >= targetDate && r.statut === "Confirmée";
+        });
+
+        const frame = document.createElement("iframe");
+        frame.style.display = "none";
+        document.body.appendChild(frame);
+        const doc = frame.contentWindow.document;
+        
+        let rows = list.map(r => `
+            <tr>
+                <td>${r.chambre?.num_chambre || "-"}</td>
+                <td>${r.intervenant?.prenom} ${r.intervenant?.nom}</td>
+                <td>${r.intervenant?.cin || "-"}</td>
+                <td>${r.intervenant2 ? r.intervenant2.prenom + ' ' + r.intervenant2.nom : '-'}</td>
+                <td>${r.date_debut?.split("-").reverse().join("/")} au ${r.date_fin?.split("-").reverse().join("/")}</td>
+            </tr>
+        `).join("");
+
+        if (rows === "") rows = "<tr><td colspan='5' style='text-align: center;'>Aucun bénéficiaire pour cette date</td></tr>";
+
+        doc.write(`
+            <html>
+            <head>
+                <title>Liste des Bénéficiaires</title>
+                <style>
+                    body { font-family: sans-serif; padding: 20px; }
+                    h2 { text-align: center; text-transform: uppercase; }
+                    h4 { text-align: center; color: #555; margin-bottom: 30px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #111; padding: 10px; text-align: left; }
+                </style>
+            </head>
+            <body>
+                <h2>Liste des Bénéficiaires d'Hébergement</h2>
+                <h4>Date: ${date.split("-").reverse().join("/")}</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Chambre</th>
+                            <th>Bénéficiaire principal</th>
+                            <th>CIN</th>
+                            <th>Accompagnant</th>
+                            <th>Période</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        doc.close();
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        setModal(null);
+        setTimeout(() => document.body.removeChild(frame), 1000);
+    };
+
     const filteredReservations = reservations.filter(res => {
         const s = searchRes.toLowerCase();
         return (
@@ -682,6 +816,9 @@ function ReservationsInner() {
                             </button>
                         ))}
                     </div>
+                    <button onClick={() => setModal("printList")} style={{ background: t.bg, color: t.textSub, border: `1px solid ${t.borderMd}`, borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: "0.8rem", boxShadow: t.shadow, display: "flex", alignItems: "center", gap: 8 }}>
+                        <i className="fa-solid fa-print" /> Liste Bénéficiaires
+                    </button>
                     <button onClick={() => setModal("add")} style={{ background: PRIMARY, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: "0.8rem", boxShadow: "0 4px 12px rgba(217,119,6,0.2)" }}>
                         <i className="fa-solid fa-plus" style={{ marginRight: 6 }} /> Ajouter
                     </button>
@@ -764,6 +901,9 @@ function ReservationsInner() {
                                                         <td style={{ padding: "11px 14px", borderBottom: `1px solid ${t.borderSm}`, verticalAlign: "middle" }}><Chip label={res.statut} color={sc.color} /></td>
                                                         <td style={{ padding: "11px 14px", fontSize: "0.82rem", color: t.textMuted, borderBottom: `1px solid ${t.borderSm}`, verticalAlign: "middle" }}>{res.createur?.prenom} {res.createur?.nom || "—"}</td>
                                                         <td style={{ padding: "11px 14px", borderBottom: `1px solid ${t.borderSm}`, verticalAlign: "middle", textAlign: "right" }}>
+                                                                <button onClick={() => handlePrintPaper(res)} style={btnAction("#3b82f6")} title="Imprimer">
+                                                                    <i className="fa-solid fa-print" />
+                                                                </button>
                                                                 <button onClick={() => { setEditTarget(res); setModal("edit"); }} style={btnAction(PRIMARY)}>
                                                                     <i className="fa-solid fa-pen" />
                                                                 </button>
@@ -837,6 +977,13 @@ function ReservationsInner() {
             )}
             {deleteTarget && (
                 <DeleteConfirm reservation={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />
+            )}
+            
+            {modal === "printList" && (
+                <PrintListModal
+                    onClose={() => setModal(null)}
+                    onConfirm={handlePrintList}
+                />
             )}
 
             {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
@@ -1074,7 +1221,7 @@ function ReservationsAnalyticsSection({ stats, theme }) {
             <div style={{ marginBottom: 28 }}>
                 <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: text, margin: "0 0 4px" }}>Tableau de bord analytique</h2>
                 <p style={{ margin: 0, fontSize: "0.9rem", color: textSub }}>
-                    Graphiques Recharts (area, bar, pie) — style proche des exemples officiels.
+                    Analyse détaillée des flux d'hébergement et des indicateurs de performance.
                 </p>
             </div>
 

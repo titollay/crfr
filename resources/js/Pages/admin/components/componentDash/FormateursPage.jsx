@@ -9,7 +9,7 @@ import React, {
 import axios from "axios";
 import { Link } from "react-router-dom";
 
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 
 /**
  * @typedef {{
@@ -40,15 +40,16 @@ function useDarkMode() {
 
 const DM = createContext(false);
 
-function useTheme() {
-    const dark = useContext(DM);
+function useTheme(overrideDark) {
+    const contextDark = useContext(DM);
+    const dark = overrideDark !== undefined ? overrideDark : contextDark;
     return {
         dark,
         bg: dark ? "#111" : "#fff",
         bgPage: dark ? "#0a0a0a" : "#F4F6FA",
         bgAlt: dark ? "#1a1a1a" : "#f9fafb",
         bgAlt2: dark ? "#161616" : "#fafafa",
-        bgHover: dark ? "rgba(217,119,6,0.12)" : "#fff7ed",
+        bgHover: dark ? "color-mix(in srgb, var(--admin-primary), transparent 88%)" : "color-mix(in srgb, var(--admin-primary), white 95%)",
         bgInput: dark ? "rgba(255,255,255,0.05)" : "#fff",
         bgTag: dark ? "rgba(255,255,255,0.07)" : "#f3f4f6",
         border: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
@@ -473,7 +474,7 @@ function actionBtnStyle(t, variant) {
 
 export default function FormateursPage() {
     const dark = useDarkMode();
-    const t = useTheme();
+    const t = useTheme(dark);
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);

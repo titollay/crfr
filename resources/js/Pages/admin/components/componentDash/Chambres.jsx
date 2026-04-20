@@ -35,15 +35,16 @@ function useDarkMode() {
 const DM = createContext(false);
 
 /* ─────────────────── Theme tokens ─────────────────── */
-function useTheme() {
-    const dark = useContext(DM);
+function useTheme(overrideDark) {
+    const contextDark = useContext(DM);
+    const dark = overrideDark !== undefined ? overrideDark : contextDark;
     return {
         dark,
         bg: dark ? "#111" : "#fff",
         bgPage: dark ? "#0a0a0a" : "#F4F6FA",
         bgAlt: dark ? "#1a1a1a" : "#f9fafb",
         bgAlt2: dark ? "#161616" : "#fafafa",
-        bgHover: dark ? "rgba(217,119,6,0.12)" : "#fff7ed",
+        bgHover: dark ? "color-mix(in srgb, var(--admin-primary), transparent 88%)" : "color-mix(in srgb, var(--admin-primary), white 95%)",
         bgInput: dark ? "rgba(255,255,255,0.05)" : "#fff",
         bgTag: dark ? "rgba(255,255,255,0.07)" : "#f3f4f6",
         border: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
@@ -66,7 +67,7 @@ function useTheme() {
 }
 
 /* ─────────────────── constants ─────────────────── */
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 const STATUTS = ["Disponible", "Occupée", "Maintenance"];
 const TYPES = ["Double"];
 
@@ -671,7 +672,8 @@ function DeleteConfirm({ chambre, onConfirm, onClose, loading }) {
 /* ─────────────────── Main component ─────────────────── */
 
 function ChambresInner() {
-    const t = useTheme();
+    const dark = useDarkMode();
+    const t = useTheme(dark);
     const [chambres, setChambres] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -773,7 +775,7 @@ function ChambresInner() {
     const btnAction = (c) => ({ border: "solid 1px ", background: "transparent", color: c, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5});
 
     return (
-        <DM.Provider value={useDarkMode()}>
+        <DM.Provider value={dark}>
             <div style={{ padding: "28px 24px", minHeight: "100%", background: t.bgPage, fontFamily: "'DM Sans', sans-serif" }}>
                 
                 {/* Header */}

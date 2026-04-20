@@ -10,7 +10,7 @@ import axios from "axios";
 import ReactApexChart from "react-apexcharts";
 import { Link } from "react-router-dom";
 
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 
 const SALLES = [
     { value: "salle1", label: "Salle 1" },
@@ -92,7 +92,7 @@ function useTheme() {
         bgPage: dark ? "#0a0a0a" : "#F4F6FA",
         bgAlt: dark ? "#1a1a1a" : "#f9fafb",
         bgAlt2: dark ? "#161616" : "#fafafa",
-        bgHover: dark ? "rgba(217,119,6,0.12)" : "#fff7ed",
+        bgHover: dark ? "color-mix(in srgb, var(--admin-primary), transparent 88%)" : "color-mix(in srgb, var(--admin-primary), white 95%)",
         bgInput: dark ? "rgba(255,255,255,0.05)" : "#fff",
         bgTag: dark ? "rgba(255,255,255,0.07)" : "#f3f4f6",
         border: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
@@ -1441,6 +1441,8 @@ function FormationsPageInner() {
     const [page, setPage] = useState(1);
     const [timelineGranularity, setTimelineGranularity] = useState("day");
 
+    const btnAction = (c) => ({ border: "solid 1px ", background: "transparent", color: c, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5});
+
     useEffect(() => { setPage(1); }, [search, orgFilterLabel, sortKey, sortDir]);
 
 
@@ -1534,6 +1536,50 @@ function FormationsPageInner() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handlePrintFormation = (f) => {
+        const frame = document.createElement("iframe");
+        frame.style.display = "none";
+        document.body.appendChild(frame);
+        const doc = frame.contentWindow.document;
+        doc.write(`
+            <html>
+            <head>
+                <title>Fiche de Formation</title>
+                <style>
+                    body { font-family: sans-serif; padding: 40px; color: #111; }
+                    .header { text-align: center; border-bottom: 2px solid #111; padding-bottom: 20px; margin-bottom: 30px; }
+                    .row { margin-bottom: 15px; font-size: 1.1rem; }
+                    .row strong { display: inline-block; width: 220px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>FICHE DE FORMATION</h2>
+                    <p>Centre de Réservation et Formation</p>
+                </div>
+                <div class="row"><strong>Sujet:</strong> ${f.sujet}</div>
+                <div class="row"><strong>Organisation:</strong> ${f.organisation?.nom || "N/A"}</div>
+                <div class="row"><strong>Date de début:</strong> ${f.date_debut?.split("-").reverse().join("/")}</div>
+                <div class="row"><strong>Date de fin:</strong> ${f.date_fin?.split("-").reverse().join("/")}</div>
+                <div class="row"><strong>Lieu / Salle:</strong> ${f.lieu || "N/A"} ${f.salle ? "(" + f.salle + ")" : ""}</div>
+                <div class="row"><strong>Catégorie cible:</strong> ${f.categorie_cible || "N/A"}</div>
+                <div class="row"><strong>Heures:</strong> ${f.heures_formation || 0} h</div>
+                <div class="row"><strong>Participants:</strong> ${f.nbr_prevu || 0} (Prévu) / ${f.nbr_reel || 0} (Réel)</div>
+                <div class="row"><strong>Superviseur:</strong> ${f.superviseur || "—"}</div>
+                ${f.observations ? "<div class='row'><strong>Observations:</strong> " + f.observations + "</div>" : ""}
+                
+                <div style="margin-top: 60px; text-align: right;">
+                    <p>Signature & Cachet</p>
+                </div>
+            </body>
+            </html>
+        `);
+        doc.close();
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+        setTimeout(() => document.body.removeChild(frame), 1000);
     };
 
     const handleDelete = async () => {
@@ -1804,8 +1850,9 @@ function FormationsPageInner() {
                                                 <td style={tdBase}><FormationStatusBadge dateDebut={f.date_debut} dateFin={f.date_fin} /></td>
                                                 <td style={{ ...tdBase, textAlign: "right" }}>
                                                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                                        <button onClick={() => setModal({ edit: f })} style={{ border: "solid 1px ", background: "transparent", color: PRIMARY, cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5 }}><i className="fa-solid fa-pen" /></button>
-                                                        <button onClick={() => setModal({ del: f })} style={{ border: "solid 1px ", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: 13, borderRadius: "5px", padding: 5, marginRight: 5 }}><i className="fa-solid fa-trash" /></button>
+                                                        <button onClick={() => handlePrintFormation(f)} style={btnAction("#3b82f6")} title="Imprimer"><i className="fa-solid fa-print" /></button>
+                                                        <button onClick={() => setModal({ edit: f })} style={btnAction(PRIMARY)}><i className="fa-solid fa-pen" /></button>
+                                                        <button onClick={() => setModal({ del: f })} style={btnAction("#ef4444")}><i className="fa-solid fa-trash" /></button>
                                                     </div>
                                                 </td>
                                             </tr>
