@@ -51,8 +51,9 @@ function useDarkMode() {
 
 const DM = createContext(false);
 
-function useTheme() {
-    const dark = useContext(DM);
+function useTheme(overrideDark) {
+    const contextDark = useContext(DM);
+    const dark = overrideDark !== undefined ? overrideDark : contextDark;
     return {
         dark,
         bg: dark ? "#111" : "#fff",
@@ -77,7 +78,7 @@ function useTheme() {
     };
 }
 
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 const PALETTE = [
     "#D97706",
     "#10b981",
@@ -1350,7 +1351,8 @@ export default function Intervenants() {
 }
 
 function IntervenantsInner() {
-    const t = useTheme();
+    const dark = useDarkMode();
+    const t = useTheme(dark);
 
     const [intervenants, setIntervenants] = useState([]);
     const [organisations, setOrganisations] = useState([]);

@@ -9,7 +9,7 @@ import React, {
 import axios from "axios";
 import { Link } from "react-router-dom";
 
-const PRIMARY = "#D97706";
+const PRIMARY = "var(--admin-primary, #D97706)";
 
 function useDarkMode() {
     const [dark, setDark] = useState(() =>
@@ -30,15 +30,16 @@ function useDarkMode() {
 
 const DM = createContext(false);
 
-function useTheme() {
-    const dark = useContext(DM);
+function useTheme(overrideDark) {
+    const contextDark = useContext(DM);
+    const dark = overrideDark !== undefined ? overrideDark : contextDark;
     return {
         dark,
         bg: dark ? "#111" : "#fff",
         bgPage: dark ? "#0a0a0a" : "#F4F6FA",
         bgAlt: dark ? "#1a1a1a" : "#f9fafb",
         bgAlt2: dark ? "#161616" : "#fafafa",
-        bgHover: dark ? "rgba(217,119,6,0.12)" : "#fff7ed",
+        bgHover: dark ? "color-mix(in srgb, var(--admin-primary), transparent 88%)" : "color-mix(in srgb, var(--admin-primary), white 95%)",
         bgInput: dark ? "rgba(255,255,255,0.05)" : "#fff",
         bgTag: dark ? "rgba(255,255,255,0.07)" : "#f3f4f6",
         border: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
@@ -255,9 +256,12 @@ function UserForm({ initial = {}, onSubmit, loading }) {
         prenom: initial.prenom || "",
         email: initial.email || "",
         role: initial.role || "user",
+        photo: null,
         password: "",
         password_confirmation: "",
     });
+    
+    const [preview, setPreview] = useState(initial.photo || null);
     
     const [errors, setErrors] = useState({});
     const [focus, setFocus] = useState(null);
@@ -268,9 +272,11 @@ function UserForm({ initial = {}, onSubmit, loading }) {
             prenom: initial.prenom || "",
             email: initial.email || "",
             role: initial.role || "user",
+            photo: null,
             password: "",
             password_confirmation: "",
         });
+        setPreview(initial.photo || null);
         setErrors({});
     }, [initial.id_user]);
 
@@ -299,15 +305,18 @@ function UserForm({ initial = {}, onSubmit, loading }) {
         ev.preventDefault();
         if (!validate()) return;
         
-        const payload = {
-            nom: form.nom.trim(),
-            prenom: form.prenom.trim(),
-            email: form.email.trim(),
-            role: form.role,
-        };
+        const payload = new FormData();
+        payload.append("nom", form.nom.trim());
+        payload.append("prenom", form.prenom.trim());
+        payload.append("email", form.email.trim());
+        payload.append("role", form.role);
+        
+        if (form.photo) {
+            payload.append("photo", form.photo);
+        }
         
         if (form.password) {
-            payload.password = form.password;
+            payload.append("password", form.password);
         }
         
         onSubmit(payload);
@@ -330,6 +339,32 @@ function UserForm({ initial = {}, onSubmit, loading }) {
 
     return (
         <form onSubmit={handle} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+                <div 
+                    style={{ position: "relative", width: 80, height: 80, borderRadius: "50%", background: t.bgAlt, border: `2px dashed ${t.borderMd}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden" }}
+                    onClick={() => document.getElementById("photo-input").click()}
+                >
+                    {preview ? (
+                        <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="preview" />
+                    ) : (
+                        <i className="fa-solid fa-camera" style={{ color: t.textFaint, fontSize: 20 }} />
+                    )}
+                    <input 
+                        id="photo-input"
+                        type="file" 
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                set("photo", file);
+                                setPreview(URL.createObjectURL(file));
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <Field label="Nom" required error={errors.nom}>
                     <input
@@ -527,7 +562,7 @@ function actionBtnStyle(t, variant) {
 
 export default function Users() {
     const dark = useDarkMode();
-    const t = useTheme();
+    const t = useTheme(dark);
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -569,7 +604,10 @@ export default function Users() {
         try {
             const token = localStorage.getItem("token");
             await axios.post("/api/users", payload, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data" 
+                },
             });
             setToast({ msg: "Utilisateur ajouté avec succès", type: "success" });
             setShowAdd(false);
@@ -586,8 +624,13 @@ export default function Users() {
         setFormLoading(true);
         try {
             const token = localStorage.getItem("token");
-            await axios.put(`/api/users/${editing.id_user}`, payload, {
-                headers: { Authorization: `Bearer ${token}` },
+            // Laravel partial updates with FormData often require _method=PUT
+            payload.append("_method", "PUT");
+            await axios.post(`/api/users/${editing.id_user}`, payload, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data"
+                },
             });
             setToast({ msg: "Utilisateur mis à jour", type: "success" });
             setEditing(null);
@@ -728,8 +771,7 @@ export default function Users() {
                                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
                                     <thead>
                                         <tr style={{ borderBottom: `2px solid ${t.borderSm}` }}>
-                                            <th style={thStyle(t)}>ID</th>
-                                            <th style={thStyle(t)}>Prénom & Nom</th>
+                                            <th style={thStyle(t)}>User</th>
                                             <th style={thStyle(t)}>Email</th>
                                             <th style={thStyle(t)}>Rôle</th>
                                             <th style={{ ...thStyle(t), textAlign: "right" }}>Actions</th>
@@ -747,10 +789,23 @@ export default function Users() {
                                                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                                             >
                                                 <td style={tdStyle(t)}>
-                                                    <span style={{ fontWeight: 700, color: PRIMARY }}>#{r.id_user}</span>
-                                                </td>
-                                                <td style={tdStyle(t)}>
-                                                    <div style={{ fontWeight: 600, color: t.text }}>{r.prenom} {r.nom}</div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: PRIMARY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", fontWeight: 700, overflow: "hidden", flexShrink: 0 }}>
+                                                            {r.photo ? (
+                                                                <img 
+                                                                    src={r.photo.startsWith('http') ? r.photo : `http://localhost:8000${r.photo}`} 
+                                                                    style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                                                                    alt="" 
+                                                                />
+                                                            ) : (
+                                                                `${r.prenom[0]}${r.nom[0]}`
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, color: t.text }}>{r.prenom} {r.nom}</div>
+                                                            <div style={{ fontSize: "0.7rem", color: t.textFaint }}>#{r.id_user}</div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td style={tdStyle(t)}>
                                                     <div style={{ color: t.text }}>{r.email}</div>

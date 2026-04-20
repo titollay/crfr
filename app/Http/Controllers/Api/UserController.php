@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -28,8 +29,14 @@ class UserController extends Controller
             'prenom' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'nullable|string'
+            'role' => 'nullable|string',
+            'photo' => 'nullable|image|max:2048'
         ]);
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('users', 'public');
+            $validated['photo'] = Storage::url($path);
+        }
 
         $validated['password'] = Hash::make($validated['password']);
         
@@ -63,8 +70,19 @@ class UserController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id_user, 'id_user')
             ],
             'password' => 'nullable|string|min:6',
-            'role' => 'nullable|string'
+            'role' => 'nullable|string',
+            'photo' => 'nullable|image|max:2048'
         ]);
+
+        if ($request->hasFile('photo')) {
+            // Delete old photo if exists
+            if ($user->photo) {
+                $oldPath = str_replace('/storage/', '', $user->photo);
+                Storage::disk('public')->delete($oldPath);
+            }
+            $path = $request->file('photo')->store('users', 'public');
+            $validated['photo'] = Storage::url($path);
+        }
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -83,6 +101,12 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         $user = User::findOrFail($id);
+        
+        if ($user->photo) {
+            $oldPath = str_replace('/storage/', '', $user->photo);
+            Storage::disk('public')->delete($oldPath);
+        }
+
         $user->delete();
         return response()->json(['message' => 'User successully deleted']);
     }

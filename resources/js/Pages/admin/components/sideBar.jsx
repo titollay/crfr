@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "../../../../assets/logo.png";
+import defaultLogo from "../../../../assets/logo.png";
 import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 const NAV_SECTIONS = [
     {
@@ -27,13 +29,11 @@ const NAV_SECTIONS = [
         title: "MANAGEMENT",
         items: [
             { href: "/dashboard/users", icon: "fa-solid fa-users", label: "Users" },
-            { href: "/dashboard/roles", icon: "fa-solid fa-user-shield", label: "Roles" },
         ],
     },
     {
         title: "ANALYTICS",
         items: [
-            { href: "/dashboard/statistics", icon: "fa-solid fa-chart-line", label: "Statistics" },
             { href: "/dashboard/reports", icon: "fa-solid fa-file-waveform", label: "Reports" },
         ],
     },
@@ -48,6 +48,26 @@ const NAV_SECTIONS = [
 export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
     const location = useLocation();
     const currentPath = activePath || location.pathname;
+    const [branding, setBranding] = useState({ name: "CRFR", logo: defaultLogo });
+
+    useEffect(() => {
+        const fetchBranding = async () => {
+            try {
+                const res = await axios.get("/api/settings");
+                const name = res.data.find(s => s.key === 'site_name')?.value;
+                const logo = res.data.find(s => s.key === 'site_logo')?.value;
+                if (name || logo) {
+                    setBranding({
+                        name: name || "CRFR",
+                        logo: logo || defaultLogo
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch branding", err);
+            }
+        };
+        fetchBranding();
+    }, []);
 
     return (
         <>
@@ -86,6 +106,24 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
           border-bottom: 1px solid rgba(255,255,255,0.07);
         }
 
+        /* Support for independent Sidebar Themes */
+        [data-sidebar="dark"] .sidebar-root { background: #0a0a0a !important; border-right: 1px solid rgba(255,255,255,0.07) !important; transition: all 0.3s ease; }
+        [data-sidebar="dark"] .sb-brand { border-bottom: 1px solid rgba(255,255,255,0.07) !important; }
+        [data-sidebar="dark"] .sb-item { color: rgba(255,255,255,0.6) !important; }
+        [data-sidebar="dark"] .sb-item:hover { color: #fff !important; background: color-mix(in srgb, var(--admin-primary), transparent 86%) !important; }
+        [data-sidebar="dark"] .sb-section { color: rgba(255,255,255,0.3) !important; }
+        [data-sidebar="dark"] .sb-divider { background: rgba(255,255,255,0.07) !important; }
+
+        [data-sidebar="primary"] .sidebar-root { background: var(--admin-primary) !important; border-right: none; color: #fff !important; }
+        [data-sidebar="primary"] .sb-brand { border-bottom: 1px solid rgba(255,255,255,0.1) !important; }
+        [data-sidebar="primary"] .sb-item { color: rgba(255,255,255,0.85) !important; }
+        [data-sidebar="primary"] .sb-item:hover { background: rgba(0,0,0,0.1) !important; color: #fff !important; }
+        [data-sidebar="primary"] .sb-item.active { background: rgba(0,0,0,0.2) !important; color: #fff !important; border-left-color: #fff !important; }
+        [data-sidebar="primary"] .sb-item.active i { color: #fff !important; }
+        [data-sidebar="primary"] .sb-section { color: rgba(255,255,255,0.5) !important; }
+        [data-sidebar="primary"] .sb-divider { background: rgba(255,255,255,0.1) !important; }
+        [data-sidebar="primary"] .text-gray-800 { color: #fff !important; }
+
         /* Mobile specific */
         @media (max-width: 761px) {
           .sidebar-root {
@@ -120,13 +158,13 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
 
         .sb-item:hover {
           color: #111;
-          background: rgba(217,119,6,0.08);
-          border-left-color: rgba(217,119,6,0.45);
+          background: color-mix(in srgb, var(--admin-primary), transparent 92%);
+          border-left-color: color-mix(in srgb, var(--admin-primary), transparent 55%);
         }
 
         .sb-item.active {
           color: var(--admin-primary);
-          background: rgba(217,119,6,0.14);
+          background: color-mix(in srgb, var(--admin-primary), transparent 86%);
           border-left-color: var(--admin-primary);
         }
 
@@ -161,7 +199,7 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
         .sb-toggle:hover {
           border-color: var(--admin-primary);
           color: var(--admin-primary);
-          background: rgba(217,119,6,0.10);
+          background: color-mix(in srgb, var(--admin-primary), transparent 90%);
         }
 
         /* Logout */
@@ -222,20 +260,105 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
 
         .dark .sb-item:hover {
           color: rgba(255,255,255,0.85);
-          background: rgba(217,119,6,0.14);
-          border-left-color: rgba(217,119,6,0.55);
+          background: color-mix(in srgb, var(--admin-primary), transparent 86%);
+          border-left-color: color-mix(in srgb, var(--admin-primary), transparent 45%);
         }
 
         .dark .sb-item.active {
-          color: #fbbf24; /* amber-400 for contrast on dark */
-          background: rgba(217,119,6,0.20);
-          border-left-color: #fbbf24;
+          color: var(--admin-primary); /* Use primary for contrast */
+          background: color-mix(in srgb, var(--admin-primary), transparent 80%);
+          border-left-color: var(--admin-primary);
         }
 
-        .dark .sb-item.active i { color: #fbbf24; }
+        .dark .sb-item.active i { color: var(--admin-primary); }
 
         .dark .sb-divider {
           background: rgba(255,255,255,0.07);
+        }
+
+        /* ── HORIZONTAL LAYOUT SUPPORT ── */
+        [data-sidebar-type="horizontal"] .dashboard-main-wrapper {
+          flex-direction: column !important;
+        }
+        [data-sidebar-type="horizontal"] .sidebar-root {
+          width: 100% !important;
+          height: 64px !important;
+          min-height: 64px !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          border-right: none !important;
+          border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+          overflow: visible !important;
+          padding: 0 20px !important;
+        }
+        [data-sidebar-type="horizontal"] .sb-brand {
+          border-bottom: none !important;
+          border-right: 1px solid rgba(0,0,0,0.1) !important;
+          padding: 0 20px 0 0 !important;
+          margin-right: 20px;
+        }
+        [data-sidebar-type="horizontal"] nav {
+          padding-top: 0 !important;
+          overflow: visible !important;
+          flex: 1;
+          display: flex;
+          align-items: center;
+        }
+        [data-sidebar-type="horizontal"] nav > ul {
+          flex-direction: row !important;
+          align-items: center;
+          gap: 2px;
+          height: 100%;
+          margin: 0;
+        }
+        [data-sidebar-type="horizontal"] .sb-section {
+          display: none !important; /* Hide labels in horizontal mode */
+        }
+        [data-sidebar-type="horizontal"] nav > ul > li {
+          display: flex;
+          align-items: center;
+          height: 100%;
+        }
+        [data-sidebar-type="horizontal"] nav > ul > li > ul {
+          flex-direction: row !important;
+          display: flex;
+          align-items: center;
+          height: 100%;
+        }
+        [data-sidebar-type="horizontal"] .sb-item {
+          padding: 0 15px !important;
+          height: 64px;
+          border-left: none !important;
+          border-bottom: 2px solid transparent;
+          font-size: 0.7rem !important;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        [data-sidebar-type="horizontal"] .sb-item i {
+          font-size: 0.8rem;
+        }
+        [data-sidebar-type="horizontal"] .sb-item.active {
+          border-bottom-color: var(--admin-primary) !important;
+        }
+        [data-sidebar-type="horizontal"] .sb-divider {
+          display: none !important;
+        }
+        [data-sidebar-type="horizontal"] .sb-logout {
+          width: auto !important;
+          border-top: none !important;
+          border-left: 1px solid rgba(0,0,0,0.1) !important;
+          height: 64px !important;
+          padding: 0 0 0 20px !important;
+          margin-left: 20px;
+        }
+        [data-sidebar-type="horizontal"] .sb-toggle {
+          display: none !important;
+        }
+        [data-sidebar-type="horizontal"] .sb-item span {
+          display: block !important;
+          width: auto !important;
+          opacity: 1 !important;
         }
 
         /* Backdrop */
@@ -287,16 +410,24 @@ export default function SideBar({ activePath = "", collapsed, setCollapsed }) {
 
                 {/* ── Logo ── */}
                 <div className="sb-brand">
-                    <a href="/" className="flex items-center gap-2">
+                    <a href="/" className="flex items-center gap-2 no-underline">
                         <img
-                            src={logo}
+                            src={branding.logo}
                             className="h-9 object-contain"
                             alt="logo"
-                            style={{ minWidth: 24 }}
+                            style={{ minWidth: 24, borderRadius: 4 }}
                         />
-                        <span className="text-gray-600 dark:text-gray-200 font-bold">
-                            CRFR
-                        </span>
+                        <AnimatePresence>
+                            {!collapsed && (
+                                <motion.span 
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="text-gray-800 dark:text-gray-100 font-bold text-sm tracking-tight"
+                                >
+                                    {branding.name}
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
                     </a>
                 </div>
 

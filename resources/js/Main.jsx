@@ -27,8 +27,9 @@ const FormationsPage = lazy(() => import("./Pages/admin/components/componentDash
 const OrganisationsPage = lazy(() => import("./Pages/admin/components/componentDash/OrganisationsPage"));
 const FormateursPage = lazy(() => import("./Pages/admin/components/componentDash/FormateursPage"));
 const UsersPage = lazy(() => import("./Pages/admin/components/componentDash/Users"));
-const RolesPage = lazy(() => import("./Pages/admin/components/componentDash/Roles"));
-const Statistics = lazy(() => import("./Pages/admin/components/componentDash/Statistics"));
+const ReportsPage = lazy(() => import("./Pages/admin/components/componentDash/Reports"));
+const SettingsPage = lazy(() => import("./Pages/admin/components/componentDash/Settings"));
+const ProfilePage = lazy(() => import("./Pages/admin/components/componentDash/Profile"));
 
 
 function PageLoader() {
@@ -56,9 +57,31 @@ function PageLoader() {
     );
 }
 
+import axios from "axios";
+
 export default function Main() {
     const { i18n } = useTranslation();
     const [langFade, setLangFade] = useState(false);
+
+    useEffect(() => {
+        const fetchGlobalSettings = async () => {
+            try {
+                const res = await axios.get("/api/settings");
+                const primaryColor = res.data.find(s => s.key === 'primary_color')?.value;
+                const siteName = res.data.find(s => s.key === 'site_name')?.value;
+                
+                if (primaryColor) {
+                    document.documentElement.style.setProperty('--admin-primary', primaryColor);
+                }
+                if (siteName) {
+                    document.title = siteName;
+                }
+            } catch (err) {
+                console.error("Failed to load global settings", err);
+            }
+        };
+        fetchGlobalSettings();
+    }, []);
 
     useEffect(() => {
         const handler = () => {
@@ -141,18 +164,26 @@ export default function Main() {
                         }
                     />
                     <Route
-                        path="roles"
+                        path="reports"
                         element={
                             <Suspense fallback={<PageLoader />}>
-                                <RolesPage />
+                                <ReportsPage />
                             </Suspense>
                         }
                     />
                     <Route
-                        path="statistics"
+                        path="settings"
                         element={
                             <Suspense fallback={<PageLoader />}>
-                                <Statistics />
+                                <SettingsPage />
+                            </Suspense>
+                        }
+                    />
+                    <Route
+                        path="profile"
+                        element={
+                            <Suspense fallback={<PageLoader />}>
+                                <ProfilePage />
                             </Suspense>
                         }
                     />

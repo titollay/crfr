@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FormateurController;
+use App\Http\Controllers\Api\SettingController;
 
 
 
@@ -62,6 +63,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('formateurs', [FormateurController::class, 'store']);
     Route::put('formateurs/{id}', [FormateurController::class, 'update']);
     Route::delete('formateurs/{id}', [FormateurController::class, 'destroy']);
+
+    // Settings
+    Route::get('settings', [SettingController::class, 'index']);
+    Route::post('settings', [SettingController::class, 'update']);
+    Route::post('settings/reset', [SettingController::class, 'reset']);
 
     // Users
     Route::apiResource('users', \App\Http\Controllers\Api\UserController::class)->parameters(['users' => 'id_user']);
