@@ -91,43 +91,59 @@ class IntervenantController extends Controller
         return response()->json(null, 204);
     }
 
-    public function statistics()
+    public function statistics(Request $request)
     {
-        $total = Intervenant::count();
+        $period = $request->query('period', 'all');
+
+        $intervenantQuery = Intervenant::query();
+        $formationQuery = Formation::query();
+
+        if ($period === 'today') {
+            $intervenantQuery->whereDate('intervenants.created_at', now()->toDateString());
+            $formationQuery->whereDate('formations.date_debut', now()->toDateString());
+        } elseif ($period === 'week') {
+            $intervenantQuery->where('intervenants.created_at', '>=', now()->startOfWeek());
+            $formationQuery->where('formations.date_debut', '>=', now()->startOfWeek());
+        } elseif ($period === 'month') {
+            $intervenantQuery->where('intervenants.created_at', '>=', now()->startOfMonth());
+            $formationQuery->where('formations.date_debut', '>=', now()->startOfMonth());
+        }
+
+        $total = (clone $intervenantQuery)->count();
 
         // ── Répartition par type ──
-        $totalHotelSeul   = Intervenant::whereNull('mission')->whereNull('cadre')->count();
-        $totalFormation   = Intervenant::where(function ($query) {
+        $totalHotelSeul   = (clone $intervenantQuery)->whereNull('mission')->whereNull('cadre')->count();
+        $totalFormation   = (clone $intervenantQuery)->where(function ($query) {
             $query->whereNotNull('mission')->orWhereNotNull('cadre');
         })->count();
 
         // ── Total global (impact sans doublons) ──
         // = Σ(nbr_reel de formations) + bénéficiaires hôtel-seul
-        $sumNbrReel   = (int) Formation::sum('nbr_reel');
+        $sumNbrReel   = (int) (clone $formationQuery)->sum('nbr_reel');
         $totalGlobal  = $sumNbrReel + $totalHotelSeul;
 
         // By ville
-        $byVille = Intervenant::selectRaw('ville, count(*) as total')
+        $byVille = (clone $intervenantQuery)->selectRaw('ville, count(*) as total')
             ->groupBy('ville')
             ->orderByDesc('total')
             ->limit(8)
             ->get();
 
         // By nationalite
-        $byNationalite = Intervenant::selectRaw('nationalite, count(*) as total')
+        $byNationalite = (clone $intervenantQuery)->selectRaw('nationalite, count(*) as total')
             ->groupBy('nationalite')
             ->orderByDesc('total')
             ->get();
 
         // By cadre (only those with formation)
-        $byCadre = Intervenant::whereNotNull('cadre')
+        $byCadre = (clone $intervenantQuery)->whereNotNull('cadre')
             ->selectRaw('cadre, count(*) as total')
             ->groupBy('cadre')
             ->orderByDesc('total')
             ->get();
 
         // By organisation
-        $byOrg = Intervenant::with('organisation')
+        $byOrg = (clone $intervenantQuery)->with('organisation')
             ->selectRaw('id_org, count(*) as total')
             ->groupBy('id_org')
             ->orderByDesc('total')
@@ -141,7 +157,7 @@ class IntervenantController extends Controller
             });
 
         // By mission (only those with formation)
-        $byMission = Intervenant::whereNotNull('mission')
+        $byMission = (clone $intervenantQuery)->whereNotNull('mission')
             ->selectRaw('mission, count(*) as total')
             ->groupBy('mission')
             ->orderByDesc('total')
@@ -162,31 +178,38 @@ class IntervenantController extends Controller
             return ['date' => $g->first()['date'], 'total' => $g->sum('total')];
         })->sortBy('date')->values();
 
-        // Monthly registrations (last 12 months) — Combined HOTEL ONLY + FORMATIONS
-        $monthlyHotel = Intervenant::whereNull('mission')->whereNull('cadre')
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, count(*) as total")
-            ->where('created_at', '>=', now()->subMonths(12))
-            ->groupBy('month')
-            ->get();
-        $monthlyFormations = Formation::selectRaw("DATE_FORMAT(date_debut, '%Y-%m') as month, SUM(nbr_reel) as total")
-            ->where('date_debut', '>=', now()->subMonths(12))
-            ->groupBy('month')
-            ->get();
-        $monthly = $monthlyHotel->concat($monthlyFormations)->groupBy('month')->map(function ($g) {
-            return ['month' => $g->first()['month'], 'total' => $g->sum('total')];
-        })->sortBy('month')->values();
+        // Evolution des Formations (Dynamic based on Period)
+        $evoFormat = "'%Y-%m'"; // Default All Time -> Monthly
+        if ($period === 'today') {
+            $evoFormat = "'%H:00'"; // Hourly today
+        } elseif ($period === 'week' || $period === 'month') {
+            $evoFormat = "'%Y-%m-%d'"; // Daily for week or month
+        }
 
-        // Yearly registrations — Combined HOTEL ONLY + FORMATIONS
-        $yearlyHotel = Intervenant::whereNull('mission')->whereNull('cadre')
-            ->selectRaw("YEAR(created_at) as year, count(*) as total")
-            ->groupBy('year')
-            ->get();
-        $yearlyFormations = Formation::selectRaw("YEAR(date_debut) as year, SUM(nbr_reel) as total")
-            ->groupBy('year')
-            ->get();
-        $yearly = $yearlyHotel->concat($yearlyFormations)->groupBy('year')->map(function ($g) {
-            return ['year' => $g->first()['year'], 'total' => $g->sum('total')];
-        })->sortBy('year')->values();
+        $evoHotelQuery = Intervenant::whereNull('mission')->whereNull('cadre')
+            ->selectRaw("DATE_FORMAT(intervenants.created_at, $evoFormat) as label, count(*) as total");
+        $evoFormationQuery = Formation::selectRaw("DATE_FORMAT(formations.date_debut, $evoFormat) as label, SUM(nbr_reel) as total");
+
+        if ($period === 'today') {
+            $evoHotelQuery->whereDate('created_at', now()->toDateString());
+            $evoFormationQuery->whereDate('date_debut', now()->toDateString());
+        } elseif ($period === 'week') {
+            $evoHotelQuery->where('created_at', '>=', now()->startOfWeek());
+            $evoFormationQuery->where('date_debut', '>=', now()->startOfWeek());
+        } elseif ($period === 'month') {
+            $evoHotelQuery->where('created_at', '>=', now()->startOfMonth());
+            $evoFormationQuery->where('date_debut', '>=', now()->startOfMonth());
+        } else {
+            $evoHotelQuery->where('created_at', '>=', now()->subMonths(12));
+            $evoFormationQuery->where('date_debut', '>=', now()->subMonths(12));
+        }
+
+        $evoHotel = $evoHotelQuery->groupBy('label')->get();
+        $evoFormations = $evoFormationQuery->groupBy('label')->get();
+        
+        $evolution = $evoHotel->concat($evoFormations)->groupBy('label')->map(function ($g) {
+            return ['label' => $g->first()['label'], 'total' => $g->sum('total')];
+        })->sortBy('label')->values();
 
         return response()->json([
             'total'            => $total,
@@ -200,8 +223,7 @@ class IntervenantController extends Controller
             'by_org'           => $byOrg,
             'by_mission'       => $byMission,
             'daily'            => $daily,
-            'monthly'          => $monthly,
-            'yearly'           => $yearly,
+            'evolution'        => $evolution,
         ]);
     }
 

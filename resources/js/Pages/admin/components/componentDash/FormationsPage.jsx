@@ -511,6 +511,7 @@ function formationFormFromInitial(initial) {
         heures_formation: String(initial.heures_formation ?? 0),
         observations: initial.observations ?? "",
         formateurs_ids: initial.formateurs_ids ?? [],
+        images: initial.images ?? [],
     };
 }
 
@@ -522,6 +523,32 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations, formate
     const [availableSalles, setAvailableSalles] = useState([]);
     const [loadingSalles, setLoadingSalles] = useState(false);
     const [searchTrainer, setSearchTrainer] = useState("");
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [previews, setPreviews] = useState(() => {
+        if (initial.images && Array.isArray(initial.images)) {
+            return initial.images.map(img => img.url);
+        }
+        return [];
+    });
+
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const newImages = [...selectedImages, ...files];
+        setSelectedImages(newImages);
+
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setPreviews(prev => [...prev, ...newPreviews]);
+    };
+
+    const removeImage = (idx) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== idx));
+        setPreviews(prev => {
+            URL.revokeObjectURL(prev[idx]);
+            return prev.filter((_, i) => i !== idx);
+        });
+    };
 
     const isEdit = Boolean(initial.id_forma);
 
@@ -607,20 +634,29 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations, formate
     const handle = (ev) => {
         ev.preventDefault();
         if (!validate()) return;
-        onSubmit({
-            sujet: form.sujet.trim(),
-            categorie_cible: form.categorie_cible.trim(),
-            id_org: Number(form.id_org),
-            salle: form.salle,
-            date_debut: form.date_debut,
-            date_fin: form.date_fin,
-            nbr_prevu: Number(form.nbr_prevu) || 0,
-            nbr_reel: Number(form.nbr_reel) || 0,
-            superviseur: form.superviseur.trim() || null,
-            heures_formation: Number(form.heures_formation) || 0,
-            observations: form.observations.trim() || null,
-            formateurs_ids: form.formateurs_ids,
+
+        const formData = new FormData();
+        formData.append("sujet", form.sujet.trim());
+        formData.append("categorie_cible", form.categorie_cible.trim());
+        formData.append("id_org", form.id_org);
+        formData.append("salle", form.salle);
+        formData.append("date_debut", form.date_debut);
+        formData.append("date_fin", form.date_fin);
+        formData.append("nbr_prevu", form.nbr_prevu);
+        formData.append("nbr_reel", form.nbr_reel);
+        formData.append("superviseur", form.superviseur.trim() || "");
+        formData.append("heures_formation", form.heures_formation);
+        formData.append("observations", form.observations.trim() || "");
+        
+        form.formateurs_ids.forEach((id, index) => {
+            formData.append(`formateurs_ids[${index}]`, id);
         });
+
+        selectedImages.forEach((file) => {
+            formData.append("images[]", file);
+        });
+
+        onSubmit(formData);
     };
 
     const inputStyle = (k) => ({
@@ -882,6 +918,74 @@ function FormationForm({ initial = {}, onSubmit, loading, organisations, formate
                 )}
             </Field>
 
+            <Field label="Images de la formation">
+                <div 
+                    style={{ 
+                        border: `2px dashed ${t.borderMd}`, 
+                        borderRadius: 12, 
+                        padding: "20px", 
+                        textAlign: "center",
+                        background: t.bgAlt2,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        position: "relative"
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = PRIMARY}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = t.borderMd}
+                    onClick={() => document.getElementById('formation-images-input').click()}
+                >
+                    <input 
+                        id="formation-images-input"
+                        type="file" 
+                        multiple 
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        style={{ display: "none" }}
+                    />
+                    <div style={{ transform: "translateY(-2px)" }}>
+                        <i className="fa-solid fa-cloud-arrow-up" style={{ fontSize: 24, color: PRIMARY, marginBottom: 10 }} />
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: t.textSub, fontWeight: 600 }}>
+                            Cliquez pour sélectionner des images
+                        </p>
+                        <p style={{ margin: "4px 0 0", fontSize: "0.7rem", color: t.textMuted }}>
+                            Plusieurs images autorisées (JPG, PNG)
+                        </p>
+                    </div>
+                </div>
+
+                {previews.length > 0 && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 10, marginTop: 12 }}>
+                        {previews.map((url, idx) => (
+                            <div key={idx} style={{ position: "relative", aspectRatio: "1/1", borderRadius: 8, overflow: "hidden", border: `1px solid ${t.border}` }}>
+                                <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                <button 
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                                    style={{
+                                        position: "absolute",
+                                        top: 4,
+                                        right: 4,
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: "50%",
+                                        background: "rgba(239,68,68,0.9)",
+                                        color: "#fff",
+                                        border: "none",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        fontSize: 10
+                                    }}
+                                >
+                                    <i className="fa-solid fa-xmark" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </Field>
+
             <Field label="Observations" error={errors.observations}>
                 <textarea
                     style={{ ...inputStyle("observations"), resize: "vertical", minHeight: 72 }}
@@ -1104,7 +1208,7 @@ function buildCombinedTimelineSeries(formations, intervenants, granularity) {
     };
 
     if (!formations || formations.length === 0) {
-        return { labels: [], formationCounts: [], intervenantCounts: [], participantTotals: [] };
+        return { labels: [], formationCounts: [], intervenantCounts: [], beneficiaireTotals: [] };
     }
 
     let minTime = Infinity;
@@ -1172,7 +1276,7 @@ function buildCombinedTimelineSeries(formations, intervenants, granularity) {
     }
 
     const formationCounts = [];
-    const participantTotals = [];
+    const beneficiaireTotals = [];
 
     periods.forEach(p => {
         let fCount = 0;
@@ -1188,14 +1292,14 @@ function buildCombinedTimelineSeries(formations, intervenants, granularity) {
             }
         });
         formationCounts.push(fCount);
-        participantTotals.push(pTotal);
+        beneficiaireTotals.push(pTotal);
     });
 
     return {
         labels: periods.map(p => p.label),
         formationCounts,
         intervenantCounts: [],
-        participantTotals,
+        beneficiaireTotals,
     };
 }
 
@@ -1293,7 +1397,7 @@ function FormationsCountTimelineBar({ labels, values }) {
     );
 }
 
-function ParticipantsTimelineLine({ labels, values }) {
+function BeneficiairesTimelineLine({ labels, values }) {
     const t = useTheme();
     
     const options = useMemo(() => ({
@@ -1316,7 +1420,7 @@ function ParticipantsTimelineLine({ labels, values }) {
         tooltip: { theme: t.dark ? "dark" : "light" }
     }), [labels, t.dark, t.textMuted, t.borderSm]);
 
-    const series = [{ name: "Participants", data: values }];
+    const series = [{ name: "Bénéficiaires", data: values }];
 
     if (!labels.length) {
         return <p style={{ color: t.textMuted, fontSize: "0.85rem", margin: 0 }}>Aucune donnée.</p>;
@@ -1400,6 +1504,88 @@ function DeleteFormationConfirm({ formation, onConfirm, onClose, loading }) {
     );
 }
 
+function FormationImagesGallery({ formation, onClose }) {
+    const t = useTheme();
+    const images = formation.images || [];
+
+    return (
+        <Modal title={`Images - ${formation.sujet}`} onClose={onClose} width={800}>
+            {images.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                    <i className="fa-regular fa-image" style={{ fontSize: 48, color: t.textFaint, marginBottom: 16 }} />
+                    <p style={{ color: t.textMuted }}>Aucune image n'a été ajoutée pour cette formation.</p>
+                </div>
+            ) : (
+                <div 
+                    style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", 
+                        gap: 16,
+                        padding: "4px"
+                    }}
+                >
+                    {images.map((img, idx) => (
+                        <div 
+                            key={img.id || idx} 
+                            style={{ 
+                                position: "relative", 
+                                aspectRatio: "16/10", 
+                                borderRadius: 12, 
+                                overflow: "hidden", 
+                                border: `1px solid ${t.border}`,
+                                boxShadow: t.shadow,
+                                cursor: "pointer",
+                                transition: "transform 0.2s"
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                            onClick={() => window.open(img.url, '_blank')}
+                        >
+                            <img 
+                                src={img.url} 
+                                alt={`Formation ${idx + 1}`} 
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                            />
+                            <div 
+                                style={{ 
+                                    position: "absolute", 
+                                    inset: 0, 
+                                    background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)",
+                                    display: "flex",
+                                    alignItems: "flex-end",
+                                    padding: 8,
+                                    opacity: 0,
+                                    transition: "opacity 0.2s"
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                            >
+                                <i className="fa-solid fa-expand" style={{ color: "#fff", fontSize: 14 }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+            <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+                <button 
+                    onClick={onClose}
+                    style={{
+                        padding: "8px 20px",
+                        borderRadius: 8,
+                        background: PRIMARY,
+                        color: "#fff",
+                        border: "none",
+                        fontWeight: 600,
+                        cursor: "pointer"
+                    }}
+                >
+                    Fermer
+                </button>
+            </div>
+        </Modal>
+    );
+}
+
 function actionBtnStyle(t, variant) {
     const isDel = variant === "delete";
     return {
@@ -1432,7 +1618,7 @@ function FormationsPageInner() {
     const [orgFilterLabel, setOrgFilterLabel] = useState("Toutes");
     const [sortKey, setSortKey] = useState("date_debut");
     const [sortDir, setSortDir] = useState("desc");
-    const [modal, setModal] = useState(/** @type {null | 'add' | { edit: FormationRow } | { del: FormationRow }} */ (null));
+    const [modal, setModal] = useState(/** @type {null | 'add' | { edit: FormationRow } | { del: FormationRow } | { gallery: FormationRow }} */ (null));
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [toast, setToast] = useState(/** @type {{ msg: string; type: string } | null} */ (null));
@@ -1450,7 +1636,6 @@ function FormationsPageInner() {
     const headers = useMemo(
         () => ({
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         }),
         [token],
     );
@@ -1524,7 +1709,9 @@ function FormationsPageInner() {
         if (!modal?.edit) return;
         setSaving(true);
         try {
-            await axios.put(`/api/formations/${modal.edit.id_forma}`, payload, { headers });
+            // Use POST with _method=PUT for multipart/form-data in Laravel
+            payload.append('_method', 'PUT');
+            await axios.post(`/api/formations/${modal.edit.id_forma}`, payload, { headers });
             showToast("Formation modifiée avec succès");
             setModal(null);
             fetchAll();
@@ -1566,7 +1753,7 @@ function FormationsPageInner() {
                 <div class="row"><strong>Lieu / Salle:</strong> ${f.lieu || "N/A"} ${f.salle ? "(" + f.salle + ")" : ""}</div>
                 <div class="row"><strong>Catégorie cible:</strong> ${f.categorie_cible || "N/A"}</div>
                 <div class="row"><strong>Heures:</strong> ${f.heures_formation || 0} h</div>
-                <div class="row"><strong>Participants:</strong> ${f.nbr_prevu || 0} (Prévu) / ${f.nbr_reel || 0} (Réel)</div>
+                <div class="row"><strong>Bénéficiaires:</strong> ${f.nbr_prevu || 0} (Prévu) / ${f.nbr_reel || 0} (Réel)</div>
                 <div class="row"><strong>Superviseur:</strong> ${f.superviseur || "—"}</div>
                 ${f.observations ? "<div class='row'><strong>Observations:</strong> " + f.observations + "</div>" : ""}
                 
@@ -1782,7 +1969,7 @@ function FormationsPageInner() {
                                                 { label: "Organisation", key: "organisation" },
                                                 { label: "Dates", key: "date_debut" },
                                                 { label: "Lieu", key: "lieu" },
-                                                { label: "Participants", key: "nbr_reel" },
+                                                { label: "Bénéficiaires", key: "nbr_reel" },
                                                 { label: "Formateurs", key: "nb_formateurs" },
                                                 { label: "Statut", key: "statut" }
                                             ].map(col => (
@@ -1850,6 +2037,7 @@ function FormationsPageInner() {
                                                 <td style={tdBase}><FormationStatusBadge dateDebut={f.date_debut} dateFin={f.date_fin} /></td>
                                                 <td style={{ ...tdBase, textAlign: "right" }}>
                                                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                                                        <button onClick={() => setModal({ gallery: f })} style={btnAction("#8b5cf6")} title="Voir les images"><i className="fa-solid fa-eye" /></button>
                                                         <button onClick={() => handlePrintFormation(f)} style={btnAction("#3b82f6")} title="Imprimer"><i className="fa-solid fa-print" /></button>
                                                         <button onClick={() => setModal({ edit: f })} style={btnAction(PRIMARY)}><i className="fa-solid fa-pen" /></button>
                                                         <button onClick={() => setModal({ del: f })} style={btnAction("#ef4444")}><i className="fa-solid fa-trash" /></button>
@@ -1914,7 +2102,7 @@ function FormationsPageInner() {
                             />
                             <StatCard
                                 icon="fa-solid fa-users"
-                                label="Participants"
+                                label="Bénéficiaires"
                                 value={kpiData.participants}
                                 color="#8B5CF6"
                             />
@@ -1952,14 +2140,14 @@ function FormationsPageInner() {
                                 <div style={{ background: t.bg, padding: 24, borderRadius: 20, border: `1px solid ${t.border}`, boxShadow: t.shadow }}>
                                     <h3 style={{ margin: "0 0 8px", fontSize: "0.88rem", fontWeight: 700, color: t.text }}>
                                         <i className="fa-solid fa-chart-line" style={{ color: "#3B82F6", marginRight: 8 }} />
-                                        Participants par période
+                                        Bénéficiaires par période
                                     </h3>
                                     <p style={{ margin: "0 0 14px", fontSize: "0.72rem", color: t.textMuted }}>
-                                        Évolution du nombre total cumulé de participants.
+                                        Évolution du nombre total cumulé de bénéficiaires.
                                     </p>
-                                    <ParticipantsTimelineLine
+                                    <BeneficiairesTimelineLine
                                         labels={timelineSeries.labels}
-                                        values={timelineSeries.participantTotals}
+                                        values={timelineSeries.beneficiaireTotals}
                                     />
                                 </div>
                             </div>
@@ -1999,6 +2187,12 @@ function FormationsPageInner() {
                         formateurs={formateurs}
                     />
                 </Modal>
+            )}
+            {modal && typeof modal === "object" && "gallery" in modal && (
+                <FormationImagesGallery 
+                    formation={modal.gallery} 
+                    onClose={closeModal} 
+                />
             )}
             {modal?.del && (
                 <DeleteFormationConfirm

@@ -37,4 +37,9 @@ class Formation extends Model
     {
         return $this->belongsToMany(Formateur::class, 'formation_formateur', 'formation_id', 'formateur_id');
     }
+
+    public function images()
+    {
+        return $this->hasMany(FormationImage::class, 'formation_id', 'id_forma');
+    }
 }
