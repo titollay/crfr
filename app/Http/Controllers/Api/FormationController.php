@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Formation;
+use App\Models\FormationImage;
 use App\Models\Salle;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ class FormationController extends Controller
     public function index()
     {
         $formations = Formation::query()
-            ->with(['organisation:id_org,nom,type', 'salle_relation'])
+            ->with(['organisation:id_org,nom,type', 'salle_relation', 'images'])
             ->orderByDesc('date_debut')
             ->get()
             ->map(fn (Formation $f) => $this->formationToArray($f));
@@ -125,13 +126,21 @@ class FormationController extends Controller
         }
 
         $formation = Formation::create($validated);
+
+        // Handle images
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('formations', 'public');
+                $formation->images()->create(['path' => $path]);
+            }
+        }
         
         // Attach formateurs
         if (!empty($formateursIds)) {
             $formation->formateurs()->attach($formateursIds);
         }
 
-        $formation->load(['organisation:id_org,nom,type', 'salle_relation']);
+        $formation->load(['organisation:id_org,nom,type', 'salle_relation', 'images']);
 
         // Sync the salle status
         $this->syncSalleStatus($salleName);
@@ -186,6 +195,14 @@ class FormationController extends Controller
         }
 
         $formation->update($validated);
+
+        // Handle new images
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('formations', 'public');
+                $formation->images()->create(['path' => $path]);
+            }
+        }
         
         // Sync formateurs
         $formation->formateurs()->sync($formateursIds);
@@ -285,6 +302,10 @@ class FormationController extends Controller
                     'type' => $f->organisation->type,
                 ]
                 : null,
+            'images' => $f->images->map(fn($img) => [
+                'id' => $img->id,
+                'url' => \Illuminate\Support\Facades\Storage::url($img->path),
+            ]),
         ];
     }
 }

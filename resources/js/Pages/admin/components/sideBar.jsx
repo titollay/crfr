@@ -34,7 +34,7 @@ const NAV_SECTIONS = [
     {
         title: "ANALYTICS",
         items: [
-            { href: "/dashboard/reports", icon: "fa-solid fa-file-waveform", label: "Reports" },
+            { href: "/dashboard/reports", icon: "fa-solid fa-file-waveform", label: "Rapports" },
         ],
     },
     {

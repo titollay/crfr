@@ -179,14 +179,25 @@ class ReservationController extends Controller
     /**
      * Get statistics for the charts on the Reservations Analytics tab.
      */
-    public function statistics()
+    public function statistics(Request $request)
     {
+        $period = $request->query('period', 'all');
         $today = Carbon::today();
+        
+        $resQuery = Reservation::query();
 
-        $total = Reservation::count();
-        $confirmees = Reservation::where('statut', 'Confirmée')->count();
-        $attente = Reservation::where('statut', 'En attente')->count();
-        $annulees = Reservation::where('statut', 'Annulée')->count();
+        if ($period === 'today') {
+            $resQuery->whereDate('reservations.created_at', now()->toDateString());
+        } elseif ($period === 'week') {
+            $resQuery->where('reservations.created_at', '>=', now()->startOfWeek());
+        } elseif ($period === 'month') {
+            $resQuery->where('reservations.created_at', '>=', now()->startOfMonth());
+        }
+
+        $total = (clone $resQuery)->count();
+        $confirmees = (clone $resQuery)->where('statut', 'Confirmée')->count();
+        $attente = (clone $resQuery)->where('statut', 'En attente')->count();
+        $annulees = (clone $resQuery)->where('statut', 'Annulée')->count();
 
         // KPI
         $kpi = [
@@ -232,7 +243,7 @@ class ReservationController extends Controller
         }
 
         // Top chambres
-        $byRoom = Reservation::query()
+        $byRoom = (clone $resQuery)
             ->join('chambres', 'chambres.id_chambre', '=', 'reservations.id_chambre')
             ->select('reservations.id_chambre', 'chambres.num_chambre', DB::raw('count(*) as total'))
             ->groupBy('reservations.id_chambre', 'chambres.num_chambre')
@@ -255,6 +266,7 @@ class ReservationController extends Controller
             $dayCounts[$d] = 0;
         }
 
+        // Active overlapping, keep unfiltered by period
         $overlapRes = Reservation::query()
             ->whereIn('statut', ['Confirmée', 'En attente'])
             ->where('date_fin', '>=', $heatStart->toDateString())
@@ -281,14 +293,14 @@ class ReservationController extends Controller
         ])->values()->all();
 
         // Average stay (confirmed reservations only, nights inclusive)
-        $avgStay = Reservation::query()
+        $avgStay = (clone $resQuery)
             ->where('statut', 'Confirmée')
             ->whereRaw('DATEDIFF(date_fin, date_debut) >= 0')
             ->selectRaw('ROUND(AVG(DATEDIFF(date_fin, date_debut) + 1), 1) as v')
             ->value('v');
 
         // Top créateurs (employés)
-        $byCreator = Reservation::query()
+        $byCreator = (clone $resQuery)
             ->join('users', 'users.id_user', '=', 'reservations.created_by')
             ->select('users.id_user', 'users.nom', 'users.prenom', DB::raw('count(*) as total'))
             ->groupBy('users.id_user', 'users.nom', 'users.prenom')
@@ -302,14 +314,14 @@ class ReservationController extends Controller
                 'total' => (int) $row->total,
             ]);
 
-        $single = Reservation::whereNull('id_inter_2')->count();
-        $double = Reservation::whereNotNull('id_inter_2')->count();
+        $single = (clone $resQuery)->whereNull('id_inter_2')->count();
+        $double = (clone $resQuery)->whereNotNull('id_inter_2')->count();
 
         $todayStr = $today->toDateString();
-        $activeReservations = Reservation::whereIn('statut', ['Confirmée', 'En attente'])
+        $activeReservations = (clone $resQuery)->whereIn('statut', ['Confirmée', 'En attente'])
             ->where('date_fin', '>=', $todayStr)
             ->count();
-        $pastReservations = Reservation::query()
+        $pastReservations = (clone $resQuery)
             ->where(function ($q) use ($todayStr) {
                 $q->where('statut', 'Annulée')
                     ->orWhere(function ($q2) use ($todayStr) {

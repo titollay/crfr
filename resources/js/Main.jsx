@@ -30,6 +30,7 @@ const UsersPage = lazy(() => import("./Pages/admin/components/componentDash/User
 const ReportsPage = lazy(() => import("./Pages/admin/components/componentDash/Reports"));
 const SettingsPage = lazy(() => import("./Pages/admin/components/componentDash/Settings"));
 const ProfilePage = lazy(() => import("./Pages/admin/components/componentDash/Profile"));
+const HomeDashboard = lazy(() => import("./Pages/admin/components/componentDash/HomeDashboard"));
 
 
 function PageLoader() {
@@ -106,7 +107,11 @@ export default function Main() {
                 <Route path="/index/*" element={<LegacyIndexRedirect />} />
 
                 <Route path="/dashboard" element={<Dashboard />}>
-                    <Route index element={<Navigate to="chambres" replace />} />
+                    <Route index element={
+                        <Suspense fallback={<PageLoader />}>
+                            <HomeDashboard />
+                        </Suspense>
+                    } />
                     <Route
                         path="chambres"
                         element={

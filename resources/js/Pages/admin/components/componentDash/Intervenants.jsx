@@ -1433,7 +1433,7 @@ function IntervenantsInner() {
             await axios.post("/api/intervenants", form, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            showToast("Bénéficiaire ajouté avec succès !");
+            showToast("Bénéficiaire supprimé avec succès !");
             setShowAdd(false);
             fetchAll();
         } catch (err) {
