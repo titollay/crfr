@@ -13,6 +13,7 @@ class ChambreController extends Controller
 {
     public function index()
     {
+        Chambre::syncAllStatuses();
         return response()->json(Chambre::all());
     }
 
@@ -75,6 +76,7 @@ class ChambreController extends Controller
 
     public function statistics()
     {
+        Chambre::syncAllStatuses();
         $total = Chambre::count();
         $disponible = Chambre::where('statut', 'Disponible')->count();
         $occupee = Chambre::where('statut', 'Occupée')->count();

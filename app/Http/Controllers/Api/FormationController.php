@@ -13,6 +13,7 @@ class FormationController extends Controller
 {
     public function index()
     {
+        \App\Models\Salle::syncAllStatuses();
         $formations = Formation::query()
             ->with(['organisation:id_org,nom,type', 'salle_relation', 'images'])
             ->orderByDesc('date_debut')
@@ -235,28 +236,12 @@ class FormationController extends Controller
      * Sync a salle's status based on whether any formation is currently active on it.
      * The salle is "Occupée" only if there's a formation happening today.
      */
-    private function syncSalleStatus(?string $salleNum): void
+    private function syncSalleStatus($salleNum)
     {
         if (!$salleNum) return;
 
         $salle = Salle::where('num_salle', $salleNum)->first();
-        if (!$salle) return;
-
-        $today = Carbon::today();
-        $hasSalleCol = \Illuminate\Support\Facades\Schema::hasColumn('formations', 'salle');
-
-        $hasActiveFormation = Formation::where(function ($q) use ($salle, $salleNum, $hasSalleCol) {
-                $q->where('id_salle', $salle->id_salle);
-                if ($hasSalleCol) {
-                    $q->orWhere('salle', $salleNum);
-                }
-            })
-            ->where('date_debut', '<=', $today)
-            ->where('date_fin', '>=', $today)
-            ->exists();
-
-        $salle->statut = $hasActiveFormation ? 'Occupée' : 'Disponible';
-        $salle->save();
+        if ($salle) $salle->syncStatus();
     }
 
     private function applyStatutFromDates(array &$validated): void

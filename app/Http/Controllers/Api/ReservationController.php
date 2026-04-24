@@ -18,6 +18,8 @@ class ReservationController extends Controller
      */
     public function index()
     {
+        Chambre::syncAllStatuses();
+
         $reservations = Reservation::with(['intervenant', 'intervenant2', 'chambre', 'createur'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -123,13 +125,16 @@ class ReservationController extends Controller
         ]);
 
         // If the room changed, we need to sync both old and new room status
-        $old_room_id = $reservation->id_chambre;
+        $oldRoomId = $reservation->id_chambre;
 
         $reservation->update($validated);
+        
+        $chambre = Chambre::find($reservation->id_chambre);
+        if ($chambre) $chambre->syncStatus();
 
-        $this->syncRoomStatus($old_room_id);
-        if ($old_room_id !== $reservation->id_chambre) {
-            $this->syncRoomStatus($reservation->id_chambre);
+        if ($oldRoomId !== $reservation->id_chambre) {
+            $oldRoom = Chambre::find($oldRoomId);
+            if ($oldRoom) $oldRoom->syncStatus();
         }
 
         $reservation->load(['intervenant', 'intervenant2', 'chambre', 'createur']);
@@ -158,22 +163,15 @@ class ReservationController extends Controller
     private function syncRoomStatus($id_chambre)
     {
         $chambre = Chambre::find($id_chambre);
-        if (!$chambre) return;
+        if ($chambre) $chambre->syncStatus();
+    }
 
-        $today = Carbon::today();
-
-        $hasActive = Reservation::where('id_chambre', $id_chambre)
-            ->where('statut', 'Confirmée')
-            ->where('date_debut', '<=', $today)
-            ->where('date_fin', '>=', $today)
-            ->exists();
-
-        // If it was supposed to be in maintenance etc., we might not want to touch it.
-        // Assuming we only toggle between 'Disponible' and 'Occupee' for this rule.
-        if ($chambre->statut !== 'En maintenance') {
-            $chambre->statut = $hasActive ? 'Occupee' : 'Disponible';
-            $chambre->save();
-        }
+    /**
+     * Update all room statuses based on current reservations.
+     */
+    public function syncAllRoomStatuses()
+    {
+        Chambre::syncAllStatuses();
     }
 
     /**

@@ -17,6 +17,9 @@ class DashboardController extends Controller
 {
     public function summary()
     {
+        // 0. Sync Room Statuses based on dates
+        \App\Models\Chambre::syncAllStatuses();
+
         // 1. Key Metrics
         $totalIntervenants = Intervenant::count();
         $totalOrganisations = Organisation::count();
