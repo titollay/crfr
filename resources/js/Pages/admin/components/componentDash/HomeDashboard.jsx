@@ -106,7 +106,7 @@ function formationsToFcEvents(list, dark) {
         .filter(Boolean);
 }
 
-function DashboardCalendar({ events, theme, title, icon }) {
+const DashboardCalendar = React.memo(function DashboardCalendar({ events, theme, title, icon }) {
     const calRef = useRef(null);
     const { dark, bg, border, text, textMuted, textSub } = theme;
 
@@ -225,9 +225,9 @@ function DashboardCalendar({ events, theme, title, icon }) {
             </div>
         </div>
     );
-}
+});
 
-const RecentFormations = ({ formations, theme: t }) => (
+const RecentFormations = React.memo(({ formations, theme: t }) => (
     <div style={{ background: t.bg, padding: 32, borderRadius: 24, border: `1px solid ${t.border}`, boxShadow: t.shadow, height: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div>
@@ -275,7 +275,7 @@ const RecentFormations = ({ formations, theme: t }) => (
             )}
         </div>
     </div>
-);
+));
 
 export default function HomeDashboard() {
     const dark = useDarkMode();
@@ -411,7 +411,7 @@ function HomeDashboardInner() {
         { name: "Réservations", data: stats.chart.map(c => c.reservations) }
     ];
 
-const StatCard = ({ icon, label, val, color, trend, subtext, theme: t, period, setPeriod }) => {
+const StatCard = React.memo(({ icon, label, val, color, trend, subtext, theme: t, period, setPeriod }) => {
     const [open, setOpen] = useState(false);
     const containerRef = useRef(null);
     const periods = ["Total", "Aujourd'hui", "Ce mois", "Cette année"];
@@ -439,17 +439,17 @@ const StatCard = ({ icon, label, val, color, trend, subtext, theme: t, period, s
                 zIndex: open ? 50 : 1
             }}
         >
-            {/* Propagating Ripples - Slower */}
+            {/* Propagating Ripples - Optimized */}
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden", borderRadius: 24 }}>
-                {[0, 1, 2].map((i) => (
+                {[0, 1].map((i) => (
                     <motion.div
                         key={i}
-                        initial={{ scale: 0, opacity: 0.2 }}
+                        initial={{ scale: 0, opacity: 0.15 }}
                         animate={{ scale: 4, opacity: 0 }}
                         transition={{
-                            duration: 7, 
+                            duration: 8, 
                             repeat: Infinity,
-                            delay: i * 1.8,
+                            delay: i * 4,
                             ease: "easeOut"
                         }}
                         style={{
@@ -538,7 +538,7 @@ const StatCard = ({ icon, label, val, color, trend, subtext, theme: t, period, s
             </div>
         </motion.div>
     );
-};
+});
 
     return (
         <motion.div 

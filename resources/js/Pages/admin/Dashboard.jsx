@@ -58,7 +58,6 @@ export default function Dashboard() {
             id="dashboard-layout"
         >
             <SideBar
-                key={location.pathname}
                 collapsed={collapsed}
                 setCollapsed={setCollapsed}
             />

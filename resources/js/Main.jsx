@@ -1,19 +1,21 @@
-import React, { useEffect, useState, lazy, Suspense } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Dashboard from "./Pages/admin/Dashboard";
 import Login from "./Pages/Auth/Login";
 import Home from "./Home";
 
-const Chambres = lazy(
-    () => import("./Pages/admin/components/componentDash/Chambres"),
-);
-const Reservations = lazy(
-    () => import("./Pages/admin/components/componentDash/Reservations"),
-);
-const Intervenants = lazy(
-    () => import("./Pages/admin/components/componentDash/Intervenants"),
-);
+import Chambres from "./Pages/admin/components/componentDash/Chambres";
+import Reservations from "./Pages/admin/components/componentDash/Reservations";
+import Intervenants from "./Pages/admin/components/componentDash/Intervenants";
+import FormationsPage from "./Pages/admin/components/componentDash/FormationsPage";
+import OrganisationsPage from "./Pages/admin/components/componentDash/OrganisationsPage";
+import FormateursPage from "./Pages/admin/components/componentDash/FormateursPage";
+import UsersPage from "./Pages/admin/components/componentDash/Users";
+import ReportsPage from "./Pages/admin/components/componentDash/Reports";
+import SettingsPage from "./Pages/admin/components/componentDash/Settings";
+import ProfilePage from "./Pages/admin/components/componentDash/Profile";
+import HomeDashboard from "./Pages/admin/components/componentDash/HomeDashboard";
 
 function LegacyIndexRedirect() {
     const { pathname, search, hash } = useLocation();
@@ -21,16 +23,6 @@ function LegacyIndexRedirect() {
     const to = `${next}${search}${hash}`;
     return <Navigate to={to || "/dashboard"} replace />;
 }
-
-
-const FormationsPage = lazy(() => import("./Pages/admin/components/componentDash/FormationsPage"));
-const OrganisationsPage = lazy(() => import("./Pages/admin/components/componentDash/OrganisationsPage"));
-const FormateursPage = lazy(() => import("./Pages/admin/components/componentDash/FormateursPage"));
-const UsersPage = lazy(() => import("./Pages/admin/components/componentDash/Users"));
-const ReportsPage = lazy(() => import("./Pages/admin/components/componentDash/Reports"));
-const SettingsPage = lazy(() => import("./Pages/admin/components/componentDash/Settings"));
-const ProfilePage = lazy(() => import("./Pages/admin/components/componentDash/Profile"));
-const HomeDashboard = lazy(() => import("./Pages/admin/components/componentDash/HomeDashboard"));
 
 
 function PageLoader() {
@@ -107,91 +99,17 @@ export default function Main() {
                 <Route path="/index/*" element={<LegacyIndexRedirect />} />
 
                 <Route path="/dashboard" element={<Dashboard />}>
-                    <Route index element={
-                        <Suspense fallback={<PageLoader />}>
-                            <HomeDashboard />
-                        </Suspense>
-                    } />
-                    <Route
-                        path="chambres"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <Chambres />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="reservations"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <Reservations />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="intervenants"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <Intervenants />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="formations"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <FormationsPage />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="organisations"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <OrganisationsPage />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="formateurs"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <FormateursPage />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="users"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <UsersPage />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="reports"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <ReportsPage />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="settings"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <SettingsPage />
-                            </Suspense>
-                        }
-                    />
-                    <Route
-                        path="profile"
-                        element={
-                            <Suspense fallback={<PageLoader />}>
-                                <ProfilePage />
-                            </Suspense>
-                        }
-                    />
+                    <Route index element={<HomeDashboard />} />
+                    <Route path="chambres" element={<Chambres />} />
+                    <Route path="reservations" element={<Reservations />} />
+                    <Route path="intervenants" element={<Intervenants />} />
+                    <Route path="formations" element={<FormationsPage />} />
+                    <Route path="organisations" element={<OrganisationsPage />} />
+                    <Route path="formateurs" element={<FormateursPage />} />
+                    <Route path="users" element={<UsersPage />} />
+                    <Route path="reports" element={<ReportsPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
                 </Route>
             </Routes>
         </div>
