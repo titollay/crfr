@@ -28,8 +28,8 @@ return new class extends Migration
     // On utilise souvent 'timestamp' ou 'dateTime' et on le met en 'nullable' 
     // car au moment de la création du compte, l'utilisateur ne s'est pas encore connecté.
     $table->timestamp('last_login_at')->nullable();
-});
-    }
+    });
+}
 
     /**
      * Reverse the migrations.

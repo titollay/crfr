@@ -11,6 +11,7 @@ import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ReactApexChart from "react-apexcharts";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 ChartJS.register(ArcElement, Tooltip);
 
@@ -645,6 +646,24 @@ function ChambreForm({ initial = {}, onSubmit, loading }) {
                     <CustomSelect value={form.statut} options={STATUTS} onChange={v => set("statut", v)} />
                 </div>
             </div>
+
+            {form.statut === "Maintenance" && (
+                <motion.div 
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ display: "flex", flexDirection: "column", gap: 5 }}
+                >
+                    <label style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textSub }}>Durée estimée (jours)</label>
+                    <input 
+                        type="number" 
+                        placeholder="Ex: 3"
+                        style={inputBase} 
+                        value={form.maintenance_duree} 
+                        onChange={e => set("maintenance_duree", e.target.value)} 
+                        required={form.statut === "Maintenance"}
+                    />
+                </motion.div>
+            )}
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <label style={{ fontSize: "0.75rem", fontWeight: 600, color: t.textSub }}>Équipements</label>
                 <textarea style={{ ...inputBase, minHeight: 80 }} value={form.equipements} onChange={e => set("equipements", e.target.value)} />
@@ -759,9 +778,9 @@ function ChambresInner() {
     const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
     const maintenanceRooms = chambres.filter(c => c.statut === "Maintenance").map(c => {
-        const upAt = c.updated_at ? new Date(c.updated_at) : new Date();
-        const diff = Math.floor((Date.now() - upAt.getTime()) / (1000*60*60*24));
-        return { ...c, daysInMaintenance: diff || 1 };
+        const startAt = c.maintenance_at ? new Date(c.maintenance_at) : (c.updated_at ? new Date(c.updated_at) : new Date());
+        const diff = Math.floor((Date.now() - startAt.getTime()) / (1000*60*60*24));
+        return { ...c, daysInMaintenance: diff || 0 };
     }).sort((a,b) => b.daysInMaintenance - a.daysInMaintenance);
 
     const toggleSort = (k) => {
@@ -923,7 +942,12 @@ function ChambresInner() {
                                             <tr key={c.id_chambre} style={{ background: i % 2 === 0 ? t.bg : t.bgAlt2 }}>
                                                 <td style={{ ...tdBase, fontWeight: 700 }}>{c.num_chambre}</td>
                                                 <td style={tdBase}>{c.type_chambre}</td>
-                                                <td style={{ ...tdBase, color: c.daysInMaintenance >= 3 ? "#ef4444" : t.textSub, fontWeight: 600 }}>{c.daysInMaintenance} jours</td>
+                                                <td style={{ ...tdBase, color: t.text, fontWeight: 600 }}>
+                                                    {c.maintenance_duree ? `${c.maintenance_duree} j (prévu)` : "—"}
+                                                    <div style={{ fontSize: "0.65rem", color: c.daysInMaintenance >= (c.maintenance_duree || 3) ? "#ef4444" : t.textSub }}>
+                                                        {c.daysInMaintenance} j écoulés
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

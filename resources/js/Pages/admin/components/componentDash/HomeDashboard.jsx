@@ -587,10 +587,8 @@ const StatCard = ({ icon, label, val, color, trend, subtext, theme: t, period, s
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 24 }}>
                 {/* Main Activity Chart */}
-                <motion.div variants={itemVariants} style={{ 
-                    gridColumn: "span 8", 
+                <motion.div variants={itemVariants} className="col-span-12 lg:col-span-8" style={{ 
                     background: t.bg, padding: 32, borderRadius: 24, border: `1px solid ${t.border}`, boxShadow: t.shadow,
-                    "@media (max-width: 1200px)": { gridColumn: "span 12" } 
                 }}>
                     <div style={{ marginBottom: 24 }}>
                         <h4 style={{ margin: 0, color: t.text, fontSize: "1.2rem", fontWeight: 700 }}>Activité Mensuelle</h4>
@@ -604,10 +602,7 @@ const StatCard = ({ icon, label, val, color, trend, subtext, theme: t, period, s
                 </motion.div>
 
                 {/* Recent Formations List */}
-                <motion.div variants={itemVariants} style={{ 
-                    gridColumn: "span 4", 
-                    "@media (max-width: 1200px)": { gridColumn: "span 12" } 
-                }}>
+                <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4">
                     <RecentFormations formations={stats?.recent?.formations} theme={t} />
                 </motion.div>
 

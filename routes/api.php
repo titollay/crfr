@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\SettingController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::get('/settings', [SettingController::class, 'index']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -65,7 +67,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('formateurs/{id}', [FormateurController::class, 'destroy']);
 
     // Settings
-    Route::get('settings', [SettingController::class, 'index']);
     Route::post('settings', [SettingController::class, 'update']);
     Route::post('settings/reset', [SettingController::class, 'reset']);
 

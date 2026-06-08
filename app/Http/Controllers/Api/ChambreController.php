@@ -30,6 +30,9 @@ class ChambreController extends Controller
 
         if (($validated['statut'] ?? null) !== 'Maintenance') {
             $validated['maintenance_duree'] = null;
+            $validated['maintenance_at'] = null;
+        } else {
+            $validated['maintenance_at'] = now();
         }
 
         $chambre = Chambre::create($validated);
@@ -59,6 +62,11 @@ class ChambreController extends Controller
 
         if (($validated['statut'] ?? null) !== 'Maintenance') {
             $validated['maintenance_duree'] = null;
+            $validated['maintenance_at'] = null;
+        } else {
+            if ($chambre->statut !== 'Maintenance') {
+                $validated['maintenance_at'] = now();
+            }
         }
 
         $chambre->update($validated);

@@ -16,6 +16,7 @@ class Chambre extends Model
         'type_chambre', 
         'statut', 
         'maintenance_duree',
+        'maintenance_at',
         'etage', 
         'equipements'
     ];
@@ -54,22 +55,39 @@ class Chambre extends Model
      */
     public static function syncAllStatuses()
     {
-        $today = \Carbon\Carbon::today()->toDateString();
+        $today = \Carbon\Carbon::today();
+        $todayStr = $today->toDateString();
         
-        // IDs of rooms with active reservations today
+        // 1. Release rooms from maintenance if duration exceeded
+        self::where('statut', 'Maintenance')
+            ->whereNotNull('maintenance_at')
+            ->whereNotNull('maintenance_duree')
+            ->get()
+            ->each(function ($chambre) use ($today) {
+                $start = \Carbon\Carbon::parse($chambre->maintenance_at);
+                if ($start->diffInDays($today) >= $chambre->maintenance_duree) {
+                    $chambre->update([
+                        'statut' => 'Disponible',
+                        'maintenance_at' => null,
+                        'maintenance_duree' => null
+                    ]);
+                }
+            });
+
+        // 2. IDs of rooms with active reservations today
         $occupiedRoomIds = Reservation::whereIn('statut', ['Confirmée', 'En attente'])
-            ->where('date_debut', '<=', $today)
-            ->where('date_fin', '>=', $today)
+            ->where('date_debut', '<=', $todayStr)
+            ->where('date_fin', '>=', $todayStr)
             ->pluck('id_chambre')
             ->unique()
             ->toArray();
 
-        // Update to 'Occupée'
+        // 3. Update to 'Occupée'
         self::whereIn('id_chambre', $occupiedRoomIds)
             ->whereNotIn('statut', ['En maintenance', 'Maintenance', 'Occupée'])
             ->update(['statut' => 'Occupée']);
 
-        // Update to 'Disponible'
+        // 4. Update to 'Disponible'
         self::whereNotIn('id_chambre', $occupiedRoomIds)
             ->whereNotIn('statut', ['En maintenance', 'Maintenance', 'Disponible'])
             ->update(['statut' => 'Disponible']);
