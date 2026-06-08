@@ -13,20 +13,26 @@ class OrganisationController extends Controller
     /** Build a safe formations COUNT subquery based on the actual DB columns. */
     private function formationsCountRaw(): string
     {
-        $hasIdOrg = DB::getSchemaBuilder()->hasColumn('formations', 'id_org');
+        $schema = DB::getSchemaBuilder();
+        $hasIdOrg = $schema->hasColumn('formations', 'id_org');
+        $hasOrgPar = $schema->hasColumn('formations', 'organisee_par');
 
-        if ($hasIdOrg) {
-            // New schema: match by FK or by name (fallback)
+        if ($hasIdOrg && $hasOrgPar) {
             return "(SELECT COUNT(*) FROM formations
                       WHERE formations.id_org = organisations.id_org
                          OR formations.organisee_par = organisations.nom
                     ) as formations_count_raw";
+        } elseif ($hasIdOrg) {
+            return "(SELECT COUNT(*) FROM formations
+                      WHERE formations.id_org = organisations.id_org
+                    ) as formations_count_raw";
+        } elseif ($hasOrgPar) {
+            return "(SELECT COUNT(*) FROM formations
+                      WHERE formations.organisee_par = organisations.nom
+                    ) as formations_count_raw";
         }
 
-        // Old schema: match only by organisation name
-        return "(SELECT COUNT(*) FROM formations
-                  WHERE formations.organisee_par = organisations.nom
-                ) as formations_count_raw";
+        return "0 as formations_count_raw";
     }
 
     public function index()
@@ -118,10 +124,18 @@ class OrganisationController extends Controller
     {
         return (int) DB::table('formations')
             ->where(function ($q) use ($id_org, $nom) {
-                $q->where('organisee_par', $nom);
-                // Only apply id_org condition if column exists
-                if (DB::getSchemaBuilder()->hasColumn('formations', 'id_org')) {
-                    $q->orWhere('id_org', $id_org);
+                $schema = DB::getSchemaBuilder();
+                $hasIdOrg = $schema->hasColumn('formations', 'id_org');
+                $hasOrgPar = $schema->hasColumn('formations', 'organisee_par');
+
+                if ($hasIdOrg && $hasOrgPar) {
+                    $q->where('id_org', $id_org)->orWhere('organisee_par', $nom);
+                } elseif ($hasIdOrg) {
+                    $q->where('id_org', $id_org);
+                } elseif ($hasOrgPar) {
+                    $q->where('organisee_par', $nom);
+                } else {
+                    $q->whereRaw('1 = 0'); // Always false if neither exists
                 }
             })
             ->count();

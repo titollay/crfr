@@ -9,7 +9,10 @@ export default function AdminFooter() {
                 <div className="flex items-center gap-6">
                     <p className="text-[0.7rem] text-gray-400 dark:text-white/20 tracking-wider uppercase">
                         &copy; {year}{" "}
-                        <span style={{ color: "var(--admin-primary, #D97706)" }} className="font-semibold">
+                        <span
+                            style={{ color: "var(--admin-primary, #D97706)" }}
+                            className="font-semibold"
+                        >
                             CRFR
                         </span>{" "}
                         Admin v2.1.0
@@ -27,18 +30,22 @@ export default function AdminFooter() {
                     <a
                         href="#"
                         className="text-[0.65rem] text-gray-400 dark:text-white/20 tracking-widest uppercase transition-colors"
-                        style={{ '--hover-color': 'var(--admin-primary)' }}
-                        onMouseEnter={(e) => e.target.style.color = 'var(--admin-primary)'}
-                        onMouseLeave={(e) => e.target.style.color = ''}
+                        style={{ "--hover-color": "var(--admin-primary)" }}
+                        onMouseEnter={(e) =>
+                            (e.target.style.color = "var(--admin-primary)")
+                        }
+                        onMouseLeave={(e) => (e.target.style.color = "")}
                     >
                         Documentation
                     </a>
                     <a
                         href="#"
                         className="text-[0.65rem] text-gray-400 dark:text-white/20 tracking-widest uppercase transition-colors"
-                        style={{ '--hover-color': 'var(--admin-primary)' }}
-                        onMouseEnter={(e) => e.target.style.color = 'var(--admin-primary)'}
-                        onMouseLeave={(e) => e.target.style.color = ''}
+                        style={{ "--hover-color": "var(--admin-primary)" }}
+                        onMouseEnter={(e) =>
+                            (e.target.style.color = "var(--admin-primary)")
+                        }
+                        onMouseLeave={(e) => (e.target.style.color = "")}
                     >
                         Support
                     </a>

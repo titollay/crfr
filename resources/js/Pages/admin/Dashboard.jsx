@@ -53,8 +53,15 @@ export default function Dashboard() {
     }, [navigate]);
 
     return (
-        <div className="flex h-screen overflow-hidden dashboard-main-wrapper" id="dashboard-layout">
-            <SideBar key={location.pathname} collapsed={collapsed} setCollapsed={setCollapsed} />
+        <div
+            className="flex h-screen overflow-hidden dashboard-main-wrapper"
+            id="dashboard-layout"
+        >
+            <SideBar
+                key={location.pathname}
+                collapsed={collapsed}
+                setCollapsed={setCollapsed}
+            />
             <div className="flex flex-col flex-1 bg-[#F4F6FA] dark:bg-[#0a0a0a] min-w-0 transition-colors duration-300 content-area-wrapper">
                 <TopBar
                     collapsed={collapsed}

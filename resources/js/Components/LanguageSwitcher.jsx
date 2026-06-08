@@ -1,32 +1,72 @@
 import { useTranslation } from "react-i18next";
+import { Menu, Transition } from "@headlessui/react";
+import { Fragment } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * Language select (FR/AR). Uses i18n.changeLanguage for instant updates.
+ * Language switcher with a premium dropdown and globe icon.
  */
 export default function LanguageSwitcher({ className = "" }) {
   const { i18n, t } = useTranslation();
   const resolved = i18n.resolvedLanguage || i18n.language || "fr";
-  const value = resolved.startsWith("ar") ? "ar" : "fr";
+  const currentLang = resolved.startsWith("ar") ? "ar" : "fr";
+
+  const languages = [
+    { code: "fr", label: t("navbar.lang_fr"), flag: "🇫🇷" },
+    { code: "ar", label: t("navbar.lang_ar"), flag: "🇲🇦" },
+  ];
 
   return (
-    <div className={`relative ${className}`}>
-      <select
-        value={value}
-        onChange={(e) => i18n.changeLanguage(e.target.value)}
-        aria-label="Language"
-        className="h-9 rounded-lg border border-amber-600/30 bg-white/40 pl-3 pr-9 text-[0.7rem] font-bold uppercase tracking-wider text-stone-700 backdrop-blur-sm outline-none transition-colors hover:bg-white/60 focus:ring-2 focus:ring-amber-400/40 dark:border-amber-500/25 dark:bg-slate-900/40 dark:text-stone-100 dark:hover:bg-slate-900/60"
-      >
-        <option value="fr">{`🇫🇷 ${t("navbar.lang_fr")}`}</option>
-        <option value="ar">{`🇲🇦 ${t("navbar.lang_ar")}`}</option>
-      </select>
+    <Menu as="div" className={`relative inline-block text-left ${className}`}>
+      {({ open }) => (
+        <>
+          <Menu.Button
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-600/30 bg-white/40 text-amber-600 backdrop-blur-md transition-all duration-300 hover:bg-amber-600 hover:text-white dark:border-amber-500/20 dark:bg-slate-900/40 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-slate-900 shadow-sm hover:shadow-amber-500/20"
+            aria-label="Select Language"
+          >
+            <i className={`fa-solid fa-earth-americas transition-transform duration-500 ${open ? 'rotate-180' : ''}`}></i>
+          </Menu.Button>
 
-      {/* chevron */}
-      <span
-        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 dark:text-stone-300"
-        aria-hidden="true"
-      >
-        ▾
-      </span>
-    </div>
+          <AnimatePresence>
+            {open && (
+              <Menu.Items
+                static
+                as={motion.div}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-2xl bg-white/80 p-1 shadow-2xl backdrop-blur-xl ring-1 ring-black/5 focus:outline-none dark:divide-gray-800 dark:bg-slate-900/80 dark:ring-white/10 z-[60]"
+              >
+                <div className="px-1 py-1">
+                  {languages.map((lang) => (
+                    <Menu.Item key={lang.code}>
+                      {({ active }) => (
+                        <button
+                          onClick={() => i18n.changeLanguage(lang.code)}
+                          className={`${
+                            active || currentLang === lang.code
+                              ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20"
+                              : "text-gray-700 dark:text-gray-200"
+                          } group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">{lang.flag}</span>
+                            <span>{lang.label}</span>
+                          </div>
+                          {currentLang === lang.code && (
+                            <i className="fa-solid fa-check text-xs"></i>
+                          )}
+                        </button>
+                      )}
+                    </Menu.Item>
+                  ))}
+                </div>
+              </Menu.Items>
+            )}
+          </AnimatePresence>
+        </>
+      )}
+    </Menu>
   );
 }
