@@ -4,8 +4,7 @@ A Laravel 12 REST API backend for managing a training center that combines **acc
 
 ---<img width="1919" height="910" alt="Capture d&#39;écran 2026-05-04 230345" src="https://github.com/user-attachments/assets/e76ad294-aab5-48aa-b898-d61fb517ecc6" />
 <img width="1919" height="909" alt="Capture d&#39;écran 2026-05-04 230329" src="https://github.com/user-attachments/assets/91916051-6c25-4c38-b88b-284d8ff7099a" />
-<img width="1919" height="913" alt="Capture d&#39;écran 2026-05-04 230855" src="https://github.com/user-attachments/assets/6999e4df-ddd5-47e2-87a0-b9c4f4eb64e3" />
-<img width="1919" height="913" alt="Capture d&#39;écran 2026-05-04 230822" src="https://github.com/user-attachments/assets/a41333f7-04d8-4d2f-b339-79ba67e327f2" />
+
 <img width="1919" height="912" alt="Capture d&#39;écran 2026-05-04 230732" src="https://github.com/user-attachments/assets/ffa147dc-fb4f-44cd-a416-e399397dc069" />
 
 
